@@ -1,0 +1,34 @@
+name: runsafe
+description: "A new Flutter project."
+publish_to: 'none' 
+version: 1.0.0+1
+
+environment:
+  sdk: '>=3.1.0 <4.0.0' # Verifique sua versão do SDK aqui
+
+# Esta seção deve estar alinhada assim
+# Esta seção deve estar alinhada assim
+dependencies:
+  # A linha abaixo deve ter DOIS espaços antes
+  flutter:
+    sdk: flutter
+
+  # A linha abaixo deve ter DOIS espaços antes e alinhada com 'flutter:'
+  flutter_svg: ^2.0.7
+  
+  # A linha abaixo também deve ter DOIS espaços e estar alinhada
+  cupertino_icons: ^1.0.8
+dev_dependencies:
+  flutter_test:
+    sdk: flutter
+  flutter_lints: ^2.0.0
+
+# A seção FLUTTER deve começar AQUI, sem NENHUM espaço antes.
+flutter:
+  # A linha abaixo deve ter DOIS espaços antes.
+  uses-material-design: true
+
+  # A linha "assets:" deve ter DOIS espaços antes.
+  assets:
+    # A linha abaixo deve ter QUATRO espaços antes.
+    - assets/icons/
