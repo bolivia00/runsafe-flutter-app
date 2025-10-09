@@ -1,16 +1,9 @@
-# runsafe
+# RunSafe App
 
-A new Flutter project.
+Aplicativo em Flutter para mapeamento de rotas de corrida seguras, desenvolvido como parte da atividade acadêmica.
 
-## Getting Started
+## 📄 Documentação (PRD)
 
-This project is a starting point for a Flutter application.
+A documentação completa do projeto, incluindo requisitos, identidade visual, arquitetura e critérios de aceite, pode ser acessada através do link abaixo:
 
-A few resources to get you started if this is your first Flutter project:
-
-- [Lab: Write your first Flutter app](https://docs.flutter.dev/get-started/codelab)
-- [Cookbook: Useful Flutter samples](https://docs.flutter.dev/cookbook)
-
-For help getting started with Flutter development, view the
-[online documentation](https://docs.flutter.dev/), which offers tutorials,
-samples, guidance on mobile development, and a full API reference.
+[Acessar o PRD (Product Requirements Document) do RunSafe](https://docs.google.com/document/d/1oIO4keyjLBnlx-M9pA1Ag9esxoMYVKKmoJjnP6zTXKA/edit?usp=sharing)
