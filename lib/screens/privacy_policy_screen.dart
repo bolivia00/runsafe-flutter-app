@@ -1,8 +1,19 @@
 import 'package:flutter/material.dart';
 import 'package:runsafe/screens/home_screen.dart';
 
-class PrivacyPolicyScreen extends StatelessWidget {
+// 1. Tivemos que transformar o Widget em um "StatefulWidget"
+// para que ele possa "lembrar" se a caixa foi marcada ou não.
+class PrivacyPolicyScreen extends StatefulWidget {
   const PrivacyPolicyScreen({super.key});
+
+  @override
+  State<PrivacyPolicyScreen> createState() => _PrivacyPolicyScreenState();
+}
+
+class _PrivacyPolicyScreenState extends State<PrivacyPolicyScreen> {
+  // 2. Criamos uma variável para guardar o estado do checkbox.
+  // Ela começa como "false" (desmarcada).
+  bool _isChecked = false;
 
   @override
   Widget build(BuildContext context) {
@@ -40,14 +51,35 @@ class PrivacyPolicyScreen extends StatelessWidget {
               ),
             ),
             const SizedBox(height: 16),
-            ElevatedButton(
-              onPressed: () {
-                // No futuro, aqui será o local para pedir a permissão de localização
-                Navigator.of(context).pushAndRemoveUntil(
-                  MaterialPageRoute(builder: (context) => const HomeScreen()),
-                  (Route<dynamic> route) => false,
-                );
+
+            // 3. Adicionamos o Checkbox.
+            // Ele está dentro de um "CheckboxListTile" para ficar mais bonito.
+            CheckboxListTile(
+              title: const Text("Li e concordo com os termos."),
+              value: _isChecked,
+              onChanged: (bool? value) {
+                // Quando o usuário clica, nós atualizamos o estado.
+                setState(() {
+                  _isChecked = value ?? false;
+                });
               },
+              controlAffinity: ListTileControlAffinity.leading, // Coloca a caixa na frente do texto
+            ),
+            
+            const SizedBox(height: 16),
+
+            ElevatedButton(
+              // 4. A mágica acontece aqui!
+              // Se _isChecked for true, a função onPressed é ativada.
+              // Se for false, passamos "null", o que DESABILITA o botão automaticamente.
+              onPressed: _isChecked
+                  ? () {
+                      Navigator.of(context).pushAndRemoveUntil(
+                        MaterialPageRoute(builder: (context) => const HomeScreen()),
+                        (Route<dynamic> route) => false,
+                      );
+                    }
+                  : null, // Botão desabilitado se a caixa não estiver marcada
               child: const Text('Entendi e Concordo'),
             ),
           ],
