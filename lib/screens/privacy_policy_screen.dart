@@ -1,8 +1,6 @@
 import 'package:flutter/material.dart';
-import 'package:runsafe/screens/home_screen.dart';
+import 'package:runsafe/services/storage_service.dart';
 
-// 1. Tivemos que transformar o Widget em um "StatefulWidget"
-// para que ele possa "lembrar" se a caixa foi marcada ou não.
 class PrivacyPolicyScreen extends StatefulWidget {
   const PrivacyPolicyScreen({super.key});
 
@@ -11,9 +9,41 @@ class PrivacyPolicyScreen extends StatefulWidget {
 }
 
 class _PrivacyPolicyScreenState extends State<PrivacyPolicyScreen> {
-  // 2. Criamos uma variável para guardar o estado do checkbox.
-  // Ela começa como "false" (desmarcada).
+  // 1. Criamos o "espião" para a barra de rolagem.
+  final ScrollController _scrollController = ScrollController();
+  
   bool _isChecked = false;
+  // 2. Nova variável para saber se o usuário já rolou até o fim.
+  bool _hasScrolledToEnd = false; 
+  
+  final StorageService _storageService = StorageService();
+
+  @override
+  void initState() {
+    super.initState();
+    // 3. Dizemos ao nosso "espião" para nos avisar sempre que a rolagem mudar.
+    _scrollController.addListener(_onScroll);
+  }
+
+  // 4. Esta função é chamada toda vez que o usuário rola a página.
+  void _onScroll() {
+    // Verificamos se a posição atual da rolagem é igual à posição máxima possível.
+    if (_scrollController.position.pixels == _scrollController.position.maxScrollExtent) {
+      // Se for, e se ainda não tínhamos registrado isso, atualizamos o estado.
+      if (!_hasScrolledToEnd) {
+        setState(() {
+          _hasScrolledToEnd = true;
+        });
+      }
+    }
+  }
+
+  @override
+  void dispose() {
+    // 5. É importante "dispensar" o espião quando a tela for fechada para não usar memória à toa.
+    _scrollController.dispose();
+    super.dispose();
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -27,7 +57,9 @@ class _PrivacyPolicyScreenState extends State<PrivacyPolicyScreen> {
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
             Expanded(
+              // 6. Conectamos nosso "espião" (ScrollController) ao widget de rolagem.
               child: SingleChildScrollView(
+                controller: _scrollController,
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
@@ -36,8 +68,9 @@ class _PrivacyPolicyScreenState extends State<PrivacyPolicyScreen> {
                       style: Theme.of(context).textTheme.titleLarge,
                     ),
                     const SizedBox(height: 8),
+                    // Adicionei mais texto para garantir que a rolagem seja necessária.
                     const Text(
-                        'Para mapear suas rotas e fornecer alertas de segurança, o RunSafe precisa acessar a localização do seu dispositivo. Você pode negar essa permissão e inserir suas rotas manualmente.'),
+                        'Para mapear suas rotas e fornecer alertas de segurança, o RunSafe precisa acessar a localização do seu dispositivo. Você pode negar essa permissão e inserir suas rotas manualmente. Seus dados são processados em tempo real para garantir sua segurança e não são armazenados por mais tempo que o necessário.\n\nLorem ipsum dolor sit amet, consectetur adipiscing elit. Sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris nisi ut aliquip ex ea commodo consequat. Duis aute irure dolor in reprehenderit in voluptate velit esse cillum dolore eu fugiat nulla pariatur.\n\nExcepteur sint occaecat cupidatat non proident, sunt in culpa qui officia deserunt mollit anim id est laborum.'),
                     const SizedBox(height: 24),
                     Text(
                       'LGPD e Seus Dados',
@@ -45,41 +78,41 @@ class _PrivacyPolicyScreenState extends State<PrivacyPolicyScreen> {
                     ),
                     const SizedBox(height: 8),
                     const Text(
-                        'Respeitamos a sua privacidade. Seus dados de localização são utilizados exclusivamente para as funcionalidades do aplicativo e não são compartilhados com terceiros sem o seu consentimento explícito. Você pode gerenciar suas permissões a qualquer momento nas configurações do seu dispositivo.'),
+                        'Respeitamos a sua privacidade. Seus dados de localização são utilizados exclusivamente para as funcionalidades do aplicativo e não são compartilhados com terceiros sem o seu consentimento explícito. Você pode gerenciar suas permissões a qualquer momento nas configurações do seu dispositivo.\n\nNossa política segue estritamente os padrões da Lei Geral de Proteção de Dados (LGPD), garantindo a você total controle sobre suas informações. Para mais detalhes, consulte nossa política de privacidade completa em nosso site. Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua.'),
                   ],
                 ),
               ),
             ),
             const SizedBox(height: 16),
-
-            // 3. Adicionamos o Checkbox.
-            // Ele está dentro de um "CheckboxListTile" para ficar mais bonito.
             CheckboxListTile(
-              title: const Text("Li e concordo com os termos."),
+              // 7. A MÁGICA FINAL: O checkbox só pode ser alterado se _hasScrolledToEnd for verdadeiro.
+              // Também mudamos a cor do texto para dar uma dica visual ao usuário.
+              title: Text(
+                "Li e concordo com os termos.",
+                style: TextStyle(
+                  color: _hasScrolledToEnd ? Colors.black87 : Colors.grey,
+                ),
+              ),
               value: _isChecked,
-              onChanged: (bool? value) {
-                // Quando o usuário clica, nós atualizamos o estado.
-                setState(() {
-                  _isChecked = value ?? false;
-                });
-              },
-              controlAffinity: ListTileControlAffinity.leading, // Coloca a caixa na frente do texto
-            ),
-            
-            const SizedBox(height: 16),
-
-            ElevatedButton(
-              // 4. A mágica acontece aqui!
-              // Se _isChecked for true, a função onPressed é ativada.
-              // Se for false, passamos "null", o que DESABILITA o botão automaticamente.
-              onPressed: _isChecked
-                  ? () {
-                      Navigator.of(context).pushAndRemoveUntil(
-                        MaterialPageRoute(builder: (context) => const HomeScreen()),
-                        (Route<dynamic> route) => false,
-                      );
+              onChanged: _hasScrolledToEnd
+                  ? (bool? value) {
+                      setState(() {
+                        _isChecked = value ?? false;
+                      });
                     }
-                  : null, // Botão desabilitado se a caixa não estiver marcada
+                  : null, // O "null" aqui desabilita o checkbox.
+              controlAffinity: ListTileControlAffinity.leading,
+            ),
+            const SizedBox(height: 16),
+            ElevatedButton(
+              onPressed: _isChecked
+                  ? () async {
+                      await _storageService.saveUserConsent();
+                      if (mounted) {
+                        Navigator.of(context).pushNamedAndRemoveUntil('/home', (route) => false);
+                      }
+                    }
+                  : null,
               child: const Text('Entendi e Concordo'),
             ),
           ],
