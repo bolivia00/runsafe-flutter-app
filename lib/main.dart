@@ -1,4 +1,7 @@
 import 'package:flutter/material.dart';
+import 'package:runsafe/screens/home_screen.dart';
+import 'package:runsafe/screens/onboarding_screen.dart';
+import 'package:runsafe/screens/privacy_policy_screen.dart';
 import 'package:runsafe/screens/splash_screen.dart';
 import 'package:runsafe/utils/app_colors.dart';
 
@@ -38,7 +41,14 @@ class RunSafeApp extends StatelessWidget {
           ),
         ),
       ),
+      // 1. A MUDANÇA ESTÁ AQUI: Definimos os "atalhos" para as telas.
+      // A tela inicial (home) ainda é a SplashScreen.
       home: const SplashScreen(),
+      routes: {
+        '/onboarding': (context) => const OnboardingScreen(),
+        '/privacy': (context) => const PrivacyPolicyScreen(),
+        '/home': (context) => const HomeScreen(),
+      },
     );
   }
 }

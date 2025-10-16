@@ -9,15 +9,15 @@ environment:
 # Esta seção deve estar alinhada assim
 # Esta seção deve estar alinhada assim
 dependencies:
-  # A linha abaixo deve ter DOIS espaços antes
   flutter:
     sdk: flutter
 
-  # A linha abaixo deve ter DOIS espaços antes e alinhada com 'flutter:'
   flutter_svg: ^2.0.7
   
-  # A linha abaixo também deve ter DOIS espaços e estar alinhada
   cupertino_icons: ^1.0.8
+  shared_preferences: ^2.2.3
+  dots_indicator: ^3.0.0 
+  
 dev_dependencies:
   flutter_test:
     sdk: flutter
