@@ -41,10 +41,11 @@ class RunSafeApp extends StatelessWidget {
           ),
         ),
       ),
-      // 1. A MUDANÇA ESTÁ AQUI: Definimos os "atalhos" para as telas.
-      // A tela inicial (home) ainda é a SplashScreen.
-      home: const SplashScreen(),
+      // MUDANÇA AQUI: Definimos a rota inicial como '/'
+      initialRoute: '/',
       routes: {
+        // A rota '/' agora aponta para a SplashScreen.
+        '/':(context) => const SplashScreen(), 
         '/onboarding': (context) => const OnboardingScreen(),
         '/privacy': (context) => const PrivacyPolicyScreen(),
         '/home': (context) => const HomeScreen(),
