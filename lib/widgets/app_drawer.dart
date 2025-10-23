@@ -6,7 +6,6 @@ class AppDrawer extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    // Usamos seu nome "Bolivar Torres" para pegar as iniciais "BT"
     const String userName = "Bolivar Torres Neto";
     const String userInitials = "BT";
 
@@ -14,7 +13,7 @@ class AppDrawer extends StatelessWidget {
       child: ListView(
         padding: EdgeInsets.zero,
         children: [
-          UserAccountsDrawerHeader(
+          UserAccountsDrawerHeader( // <-- 'const' removido daqui porque a decoração não é const
             accountName: const Text(
               userName,
               style: TextStyle(
@@ -22,10 +21,10 @@ class AppDrawer extends StatelessWidget {
                 fontSize: 16,
               ),
             ),
-            accountEmail: const Text("Visualizar perfil"), // Podemos mudar isso depois
-            currentAccountPicture: CircleAvatar(
-              backgroundColor: AppColors.navy, // Cor de fundo das iniciais
-              child: const Text(
+            accountEmail: const Text("Visualizar perfil"),
+            currentAccountPicture: const CircleAvatar( // <-- 'const' adicionado
+              backgroundColor: AppColors.navy,
+              child: Text(
                 userInitials,
                 style: TextStyle(
                   fontSize: 24,
@@ -34,15 +33,14 @@ class AppDrawer extends StatelessWidget {
                 ),
               ),
             ),
-            decoration: BoxDecoration(
-              color: AppColors.emerald, // Cor de fundo do cabeçalho
+            decoration: const BoxDecoration( // <-- 'const' adicionado
+              color: AppColors.emerald,
             ),
           ),
           ListTile(
             leading: const Icon(Icons.home),
             title: const Text('Início'),
             onTap: () {
-              // Fecha o menu e não faz nada, pois já estamos na Home.
               Navigator.of(context).pop();
             },
           ),
@@ -50,7 +48,6 @@ class AppDrawer extends StatelessWidget {
             leading: const Icon(Icons.settings),
             title: const Text('Configurações'),
             onTap: () {
-              // Aqui podemos adicionar a navegação para as configurações no futuro
               Navigator.of(context).pop();
             },
           ),

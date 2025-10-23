@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:runsafe/services/storage_service.dart';
-import 'package:runsafe/widgets/app_drawer.dart'; // <-- 1. IMPORTAMOS O NOVO WIDGET
+import 'package:runsafe/widgets/app_drawer.dart';
 
 class HomeScreen extends StatefulWidget {
   const HomeScreen({super.key});
@@ -15,9 +15,10 @@ class _HomeScreenState extends State<HomeScreen> {
   final StorageService _storageService = StorageService();
 
   void _revokeConsentAndRestart() async {
+    final navigator = Navigator.of(context); // Captura o context
     await _storageService.revokeUserConsent();
     if (mounted) {
-      Navigator.of(context).pushNamedAndRemoveUntil('/', (route) => false);
+      navigator.pushNamedAndRemoveUntil('/', (route) => false);
     }
   }
   
@@ -39,14 +40,14 @@ class _HomeScreenState extends State<HomeScreen> {
                         'Você tem certeza que deseja revogar seu consentimento? Você será levado ao início do aplicativo.'),
                     actions: <Widget>[
                       TextButton(
-                        child: const Text('Cancelar'),
                         onPressed: () {
-                          Navigator.of(context).pop();
+                          Navigator.of(context).pop(); // Fecha o diálogo
                         },
+                        child: const Text('Cancelar'), // <-- 'child' movido para o final
                       ),
                       TextButton(
-                        child: const Text('Confirmar'),
                         onPressed: _revokeConsentAndRestart,
+                        child: const Text('Confirmar'), // <-- 'child' movido para o final
                       ),
                     ],
                   );
@@ -56,7 +57,6 @@ class _HomeScreenState extends State<HomeScreen> {
           ),
         ],
       ),
-      // 2. ADICIONAMOS O DRAWER AQUI
       drawer: const AppDrawer(),
       body: Padding(
         padding: const EdgeInsets.all(16.0),
