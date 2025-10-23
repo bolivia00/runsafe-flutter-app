@@ -1,4 +1,6 @@
 import 'package:flutter/material.dart';
+import 'package:provider/provider.dart'; // 1. Importamos o Provider
+import 'package:runsafe/repositories/profile_repository.dart'; // 2. Importamos nosso Repositório
 import 'package:runsafe/screens/home_screen.dart';
 import 'package:runsafe/screens/onboarding_screen.dart';
 import 'package:runsafe/screens/privacy_policy_screen.dart';
@@ -6,7 +8,16 @@ import 'package:runsafe/screens/splash_screen.dart';
 import 'package:runsafe/utils/app_colors.dart';
 
 void main() {
-  runApp(const RunSafeApp());
+  // 3. Modificamos o main para usar o Provider
+  runApp(
+    ChangeNotifierProvider(
+      create: (context) => ProfileRepository()..loadPhotoPath(),
+      // 4. Criamos uma instância do ProfileRepository
+      //    e já chamamos o método .loadPhotoPath() 
+      //    para ele carregar a foto salva assim que o app iniciar.
+      child: const RunSafeApp(),
+    ),
+  );
 }
 
 class RunSafeApp extends StatelessWidget {
@@ -41,10 +52,8 @@ class RunSafeApp extends StatelessWidget {
           ),
         ),
       ),
-      // MUDANÇA AQUI: Definimos a rota inicial como '/'
       initialRoute: '/',
       routes: {
-        // A rota '/' agora aponta para a SplashScreen.
         '/':(context) => const SplashScreen(), 
         '/onboarding': (context) => const OnboardingScreen(),
         '/privacy': (context) => const PrivacyPolicyScreen(),
