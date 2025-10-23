@@ -8,39 +8,45 @@ import 'package:runsafe/utils/app_colors.dart';
 class AppDrawer extends StatelessWidget {
   const AppDrawer({super.key});
 
-  // 1. Criamos o widget "Avatar do Usuário"
+  // 1. MUDANÇA NA LÓGICA DO AVATAR
   Widget _buildUserAvatar(BuildContext context, ProfileRepository repository) {
-    const double avatarRadius = 36.0; // Tamanho do círculo (72dp no total)
-    ImageProvider? backgroundImage;
+    const double avatarRadius = 36.0;
+    const String userInitials = "BT";
 
-    // Se tivermos um caminho de foto, usamos Image.file()
-    if (repository.photoPath != null) {
-      backgroundImage = FileImage(
-        File(repository.photoPath!),
-        // Otimização de performance: define o tamanho máximo da imagem em memória
-        scale: 1.0, 
-      );
-    }
-
+    // O CircleAvatar agora terá um fundo padrão...
     return CircleAvatar(
-      radius: avatarRadius, // Garante 72dp (maior que 48dp)
+      radius: avatarRadius,
       backgroundColor: AppColors.navy,
-      backgroundImage: backgroundImage, // Mostra a foto (se houver)
-      // Se não houver foto (backgroundImage == null), mostra o fallback
-      child: (backgroundImage == null)
-          ? const Text(
-              "BT",
+      // ...e seu 'child' será ou a foto ou as iniciais.
+      child: (repository.photoPath != null)
+          // SE TIVER FOTO:
+          ? ClipOval( // Usamos ClipOval para deixar a imagem redonda
+              child: Image.file(
+                File(repository.photoPath!),
+                fit: BoxFit.cover, // Garante que a imagem preencha o círculo
+                width: avatarRadius * 2,  // 72dp
+                height: avatarRadius * 2, // 72dp
+                
+                // 2. ESPECIFICAÇÃO DE PERFORMANCE DO PRD 
+                // Define o tamanho máximo da imagem em memória.
+                cacheWidth: 256, 
+                cacheHeight: 256,
+              ),
+            )
+          // SE NÃO TIVER FOTO (FALLBACK):
+          : const Text(
+              userInitials,
               style: TextStyle(
                 fontSize: 24,
                 fontWeight: FontWeight.bold,
                 color: Colors.white,
               ),
-            )
-          : null, // Se tem foto, não mostra o texto
+            ),
     );
   }
 
-  // 2. Criamos a função que mostra o "BottomSheet" (menu de opções)
+  // (O restante do arquivo é igual ao que fizemos na Etapa 3)
+
   void _showPhotoOptions(BuildContext context, ProfileRepository repository) {
     showModalBottomSheet(
       context: context,
@@ -53,33 +59,28 @@ class AppDrawer extends StatelessWidget {
                 leading: const Icon(Icons.camera_alt),
                 title: const Text('Tirar Foto (Câmera)'),
                 onTap: () {
-                  // Chama o repositório para usar a câmera
                   repository.updateProfilePicture(ImageSource.camera);
-                  Navigator.of(ctx).pop(); // Fecha o menu
+                  Navigator.of(ctx).pop();
                 },
               ),
               ListTile(
                 leading: const Icon(Icons.photo_library),
                 title: const Text('Escolher da Galeria'),
                 onTap: () {
-                  // Chama o repositório para usar a galeria
                   repository.updateProfilePicture(ImageSource.gallery);
                   Navigator.of(ctx).pop();
                 },
               ),
-              // Só mostra "Remover Foto" se o usuário TIVER uma foto
               if (repository.photoPath != null)
                 ListTile(
                   leading: const Icon(Icons.delete, color: Colors.red),
                   title: const Text('Remover Foto', style: TextStyle(color: Colors.red)),
                   onTap: () {
-                    // Chama o repositório para remover a foto
                     repository.removeProfilePicture();
                     Navigator.of(ctx).pop();
                   },
                 ),
               const Divider(),
-              // 3. Mensagem de privacidade (requisito da LGPD)
               const Padding(
                 padding: EdgeInsets.symmetric(vertical: 16.0, horizontal: 16.0),
                 child: Text(
@@ -103,8 +104,6 @@ class AppDrawer extends StatelessWidget {
       child: ListView(
         padding: EdgeInsets.zero,
         children: [
-          // 4. Usamos um "Consumer" para que este widget "ouça" as
-          //    mudanças do ProfileRepository.
           Consumer<ProfileRepository>(
             builder: (context, repository, child) {
               return UserAccountsDrawerHeader(
@@ -117,14 +116,11 @@ class AppDrawer extends StatelessWidget {
                 ),
                 accountEmail: const Text("Editar foto de perfil"),
                 currentAccountPicture: Tooltip(
-                  message: "Alterar foto de perfil", // Acessibilidade (A11Y)
+                  message: "Alterar foto de perfil",
                   child: GestureDetector(
                     onTap: () {
-                      // 5. Permite que o usuário clique no avatar
-                      //    e abre o menu de opções.
                       _showPhotoOptions(context, repository);
                     },
-                    // 6. Adiciona Semantics para leitores de tela (A11Y)
                     child: Semantics(
                       label: "Avatar do usuário. Toque para alterar a foto de perfil.",
                       button: true,
@@ -132,7 +128,6 @@ class AppDrawer extends StatelessWidget {
                         alignment: Alignment.center,
                         children: [
                           _buildUserAvatar(context, repository),
-                          // 7. Mostra um "loading" se estiver processando a imagem
                           if (repository.isLoading)
                             const CircularProgressIndicator(
                               color: Colors.white,
