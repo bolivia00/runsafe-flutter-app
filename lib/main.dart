@@ -7,7 +7,10 @@ import 'package:runsafe/screens/privacy_policy_screen.dart';
 import 'package:runsafe/screens/splash_screen.dart';
 import 'package:runsafe/utils/app_colors.dart';
 
+
+
 void main() {
+
   // 3. Modificamos o main para usar o Provider
   runApp(
     ChangeNotifierProvider(
