@@ -1,23 +1,19 @@
 import 'package:flutter/material.dart';
-import 'package:provider/provider.dart'; // 1. Importamos o Provider
-import 'package:runsafe/repositories/profile_repository.dart'; // 2. Importamos nosso Repositório
+import 'package:provider/provider.dart'; 
+import 'package:runsafe/repositories/profile_repository.dart'; 
 import 'package:runsafe/screens/home_screen.dart';
 import 'package:runsafe/screens/onboarding_screen.dart';
 import 'package:runsafe/screens/privacy_policy_screen.dart';
 import 'package:runsafe/screens/splash_screen.dart';
 import 'package:runsafe/utils/app_colors.dart';
 
-
+// --- ADIÇÃO AQUI ---
+import 'package:runsafe/screens/weekly_goal_list_page.dart';
 
 void main() {
-
-  // 3. Modificamos o main para usar o Provider
   runApp(
     ChangeNotifierProvider(
       create: (context) => ProfileRepository()..loadPhotoPath(),
-      // 4. Criamos uma instância do ProfileRepository
-      //    e já chamamos o método .loadPhotoPath() 
-      //    para ele carregar a foto salva assim que o app iniciar.
       child: const RunSafeApp(),
     ),
   );
@@ -61,6 +57,9 @@ class RunSafeApp extends StatelessWidget {
         '/onboarding': (context) => const OnboardingScreen(),
         '/privacy': (context) => const PrivacyPolicyScreen(),
         '/home': (context) => const HomeScreen(),
+        
+        // --- ADIÇÃO AQUI ---
+        '/weekly-goals': (context) => const WeeklyGoalListPage(),
       },
     );
   }
