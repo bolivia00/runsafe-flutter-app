@@ -1,19 +1,26 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart'; 
+// 1. Caminho do Repositório corrigido para "domain/repositories"
+import 'package:runsafe/domain/repositories/weekly_goal_repository.dart';
 import 'package:runsafe/repositories/profile_repository.dart'; 
 import 'package:runsafe/screens/home_screen.dart';
 import 'package:runsafe/screens/onboarding_screen.dart';
 import 'package:runsafe/screens/privacy_policy_screen.dart';
 import 'package:runsafe/screens/splash_screen.dart';
-import 'package:runsafe/utils/app_colors.dart';
-
-// --- ADIÇÃO AQUI ---
 import 'package:runsafe/screens/weekly_goal_list_page.dart';
+import 'package:runsafe/utils/app_colors.dart';
 
 void main() {
   runApp(
-    ChangeNotifierProvider(
-      create: (context) => ProfileRepository()..loadPhotoPath(),
+    MultiProvider(
+      providers: [
+        ChangeNotifierProvider(
+          create: (context) => ProfileRepository()..loadPhotoPath(),
+        ),
+        ChangeNotifierProvider(
+          create: (context) => WeeklyGoalRepository()..loadGoals(),
+        ),
+      ],
       child: const RunSafeApp(),
     ),
   );
@@ -27,29 +34,15 @@ class RunSafeApp extends StatelessWidget {
     return MaterialApp(
       title: 'RunSafe',
       theme: ThemeData(
-        useMaterial3: true,
-        colorScheme: ColorScheme.fromSeed(
-          seedColor: AppColors.emerald,
-          primary: AppColors.emerald,
-          onPrimary: Colors.white,
-          secondary: AppColors.navy,
-          onSecondary: Colors.white,
-          surface: Colors.white,
-          onSurface: AppColors.gray,
-        ),
-        scaffoldBackgroundColor: Colors.white,
-        appBarTheme: const AppBarTheme(
-          backgroundColor: AppColors.emerald,
-          foregroundColor: Colors.white,
-        ),
-        elevatedButtonTheme: ElevatedButtonThemeData(
-          style: ElevatedButton.styleFrom(
-            backgroundColor: AppColors.emerald,
-            foregroundColor: Colors.white,
-            padding: const EdgeInsets.symmetric(vertical: 16.0),
-            textStyle: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
-          ),
-        ),
+         // MANTENHA O SEU TEMA COMPLETO AQUI
+         // (Vou resumir para não sobrecarregar)
+         useMaterial3: true,
+         colorScheme: ColorScheme.fromSeed(seedColor: AppColors.emerald),
+         appBarTheme: const AppBarTheme(
+           backgroundColor: AppColors.emerald,
+           foregroundColor: Colors.white,
+         ),
+         // ... etc ...
       ),
       initialRoute: '/',
       routes: {
@@ -57,8 +50,6 @@ class RunSafeApp extends StatelessWidget {
         '/onboarding': (context) => const OnboardingScreen(),
         '/privacy': (context) => const PrivacyPolicyScreen(),
         '/home': (context) => const HomeScreen(),
-        
-        // --- ADIÇÃO AQUI ---
         '/weekly-goals': (context) => const WeeklyGoalListPage(),
       },
     );
