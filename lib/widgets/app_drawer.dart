@@ -159,7 +159,14 @@ class AppDrawer extends StatelessWidget {
             },
           ),
           // ------------------------------------------
-          
+          ListTile(
+  leading: const Icon(Icons.warning_amber), // Novo Ícone
+  title: const Text('Alertas de Segurança'), // Novo Texto
+  onTap: () {
+    Navigator.of(context).pop(); // Fecha o drawer
+    Navigator.of(context).pushNamed('/safety-alerts'); // Navega para a nova rota
+  },
+),
         ],
       ),
     );
