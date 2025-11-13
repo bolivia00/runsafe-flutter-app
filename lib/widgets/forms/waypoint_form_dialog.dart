@@ -1,6 +1,7 @@
-import 'package:flutter/material.dart'; // <-- CORRIGIDO (era package.flutter)
+import 'package:flutter/material.dart';
 import 'package:runsafe/domain/entities/waypoint.dart';
 
+/// Função pública para chamar o formulário
 Future<Waypoint?> showWaypointFormDialog(
   BuildContext context, {
   Waypoint? initial,
@@ -19,9 +20,7 @@ class _WaypointFormDialog extends StatefulWidget {
   State<_WaypointFormDialog> createState() => _WaypointFormDialogState();
 }
 
-// Agora ele sabe o que é 'State'
 class _WaypointFormDialogState extends State<_WaypointFormDialog> {
-  // Agora ele sabe o que é 'TextEditingController'
   late final TextEditingController _latController;
   late final TextEditingController _lonController;
   DateTime _selectedDate = DateTime.now();
@@ -44,7 +43,6 @@ class _WaypointFormDialogState extends State<_WaypointFormDialog> {
 
   void _showError(String message) {
     if (!mounted) return;
-    // Agora ele sabe o que é 'ScaffoldMessenger', 'SnackBar', etc.
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(content: Text(message), backgroundColor: Colors.red),
     );
@@ -75,7 +73,9 @@ class _WaypointFormDialogState extends State<_WaypointFormDialog> {
         longitude: longitude,
         timestamp: timestamp,
       );
+
       Navigator.of(context).pop(newWaypoint);
+
     } catch (e) {
       _showError(e.toString().replaceAll('ArgumentError: ', ''));
     }
@@ -85,7 +85,6 @@ class _WaypointFormDialogState extends State<_WaypointFormDialog> {
   Widget build(BuildContext context) {
     final isEditing = widget.initial != null;
 
-    // Agora ele sabe o que é 'AlertDialog', 'TextFormField', etc.
     return AlertDialog(
       title: Text(isEditing ? 'Editar Ponto' : 'Adicionar Ponto de Rota'),
       content: SingleChildScrollView(

@@ -175,6 +175,14 @@ class AppDrawer extends StatelessWidget {
             },
           ),
           // --- FIM DA ADIÇÃO ---
+          ListTile(
+  leading: const Icon(Icons.route), // Novo Ícone
+  title: const Text('Minhas Rotas'), // Novo Texto
+  onTap: () {
+    Navigator.of(context).pop(); // Fecha o drawer
+    Navigator.of(context).pushNamed('/running-routes'); // Navega para a nova rota
+  },
+),
         ],
       ),
     );

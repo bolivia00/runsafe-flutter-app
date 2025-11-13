@@ -6,11 +6,10 @@ class StorageService {
   static const String _photoUpdatedAtKey = 'user_photo_updated_at';
   static const String _weeklyGoalsKey = 'weekly_goals_list';
   static const String _safetyAlertsKey = 'safety_alerts_list';
-
-  // --- NOVA CHAVE PARA A LISTA DE WAYPOINTS ---
   static const String _waypointsKey = 'waypoints_list';
+  static const String _runningRoutesKey = 'running_routes_list'; // Adicionando a chave da Rota
 
-  // --- Métodos de Consentimento (Existentes) ---
+  // --- Métodos de Consentimento ---
   Future<void> saveUserConsent() async {
     final prefs = await SharedPreferences.getInstance();
     await prefs.setBool(_consentKey, true);
@@ -24,7 +23,7 @@ class StorageService {
     await prefs.remove(_consentKey);
   }
 
-  // --- Métodos da Foto (Existentes) ---
+  // --- Métodos da Foto ---
   Future<void> savePhotoPath(String path) async {
     final prefs = await SharedPreferences.getInstance();
     await prefs.setString(_photoPathKey, path);
@@ -40,7 +39,7 @@ class StorageService {
     await prefs.remove(_photoUpdatedAtKey);
   }
 
-  // --- Métodos das Metas (Existentes) ---
+  // --- Métodos das Metas ---
   Future<void> saveWeeklyGoalsJson(String goalsJson) async {
     final prefs = await SharedPreferences.getInstance();
     await prefs.setString(_weeklyGoalsKey, goalsJson);
@@ -50,7 +49,7 @@ class StorageService {
     return prefs.getString(_weeklyGoalsKey);
   }
 
-  // --- Métodos dos Alertas (Existentes) ---
+  // --- Métodos dos Alertas (Ainda não usados, mas deixaremos prontos) ---
   Future<void> saveSafetyAlertsJson(String alertsJson) async {
     final prefs = await SharedPreferences.getInstance();
     await prefs.setString(_safetyAlertsKey, alertsJson);
@@ -60,17 +59,23 @@ class StorageService {
     return prefs.getString(_safetyAlertsKey);
   }
 
-  // --- NOVOS MÉTODOS PARA OS WAYPOINTS (os que faltavam) ---
-
-  /// Salva a lista de waypoints (em formato JSON String)
+  // --- Métodos dos Waypoints ---
   Future<void> saveWaypointsJson(String waypointsJson) async {
     final prefs = await SharedPreferences.getInstance();
     await prefs.setString(_waypointsKey, waypointsJson);
   }
-
-  /// Lê a lista de waypoints (em formato JSON String)
   Future<String?> getWaypointsJson() async {
     final prefs = await SharedPreferences.getInstance();
     return prefs.getString(_waypointsKey);
+  }
+
+  // --- Métodos das Rotas ---
+  Future<void> saveRunningRoutesJson(String routesJson) async {
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setString(_runningRoutesKey, routesJson);
+  }
+  Future<String?> getRunningRoutesJson() async {
+    final prefs = await SharedPreferences.getInstance();
+    return prefs.getString(_runningRoutesKey);
   }
 }

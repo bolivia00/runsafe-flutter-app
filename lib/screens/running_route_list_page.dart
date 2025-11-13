@@ -1,17 +1,17 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
-import 'package:runsafe/domain/repositories/waypoint_repository.dart';
-import 'package:runsafe/domain/entities/waypoint.dart';
-import 'package:runsafe/widgets/forms/waypoint_form_dialog.dart';
+import 'package:runsafe/domain/repositories/running_route_repository.dart';
+import 'package:runsafe/domain/entities/running_route.dart';
+import 'package:runsafe/widgets/forms/running_route_form_dialog.dart';
 
-class WaypointListPage extends StatefulWidget {
-  const WaypointListPage({super.key});
+class RunningRouteListPage extends StatefulWidget {
+  const RunningRouteListPage({super.key});
 
   @override
-  State<WaypointListPage> createState() => _WaypointListPageState();
+  State<RunningRouteListPage> createState() => _RunningRouteListPageState();
 }
 
-class _WaypointListPageState extends State<WaypointListPage>
+class _RunningRouteListPageState extends State<RunningRouteListPage>
     with SingleTickerProviderStateMixin {
   
   bool _showTip = true;
@@ -33,7 +33,7 @@ class _WaypointListPageState extends State<WaypointListPage>
     );
 
     WidgetsBinding.instance.addPostFrameCallback((_) {
-      if (mounted && context.read<WaypointRepository>().waypoints.isEmpty && _showTip) {
+      if (mounted && context.read<RunningRouteRepository>().routes.isEmpty && _showTip) {
         _fabController.repeat(reverse: true);
       }
     });
@@ -45,12 +45,12 @@ class _WaypointListPageState extends State<WaypointListPage>
     super.dispose();
   }
 
-  void _addWaypoint(BuildContext context) async {
-    final repository = context.read<WaypointRepository>();
-    final newWaypoint = await showWaypointFormDialog(context);
+  void _addRoute(BuildContext context) async {
+    final repository = context.read<RunningRouteRepository>();
+    final newRoute = await showRunningRouteFormDialog(context);
 
-    if (newWaypoint != null) {
-      repository.addWaypoint(newWaypoint);
+    if (newRoute != null) {
+      repository.addRoute(newRoute);
       
       if (_showTip) {
         setState(() => _showTip = false);
@@ -60,15 +60,15 @@ class _WaypointListPageState extends State<WaypointListPage>
     }
   }
 
-  void _editWaypoint(BuildContext context, Waypoint waypointToEdit) async {
-    final repository = context.read<WaypointRepository>();
-    final updatedWaypoint = await showWaypointFormDialog(
+  void _editRoute(BuildContext context, RunningRoute routeToEdit) async {
+    final repository = context.read<RunningRouteRepository>();
+    final updatedRoute = await showRunningRouteFormDialog(
       context,
-      initial: waypointToEdit, 
+      initial: routeToEdit, 
     );
 
-    if (updatedWaypoint != null) {
-      repository.editWaypoint(updatedWaypoint);
+    if (updatedRoute != null) {
+      repository.editRoute(updatedRoute);
     }
   }
 
@@ -76,7 +76,7 @@ class _WaypointListPageState extends State<WaypointListPage>
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Pontos de Rota (Waypoints)'),
+        title: const Text('Minhas Rotas de Corrida'),
         actions: [
           IconButton(
             icon: const Icon(Icons.help_outline),
@@ -92,9 +92,9 @@ class _WaypointListPageState extends State<WaypointListPage>
           SafeArea(
             child: Padding(
               padding: const EdgeInsets.all(16.0),
-              child: Consumer<WaypointRepository>(
+              child: Consumer<RunningRouteRepository>(
                 builder: (context, repository, child) {
-                  return _buildBody(context, repository.waypoints);
+                  return _buildBody(context, repository.routes);
                 },
               ),
             ),
@@ -102,7 +102,7 @@ class _WaypointListPageState extends State<WaypointListPage>
           
           if (_showTutorial) _buildTutorialOverlay(context),
           _buildOptOutButton(context),
-          if (_showTip && context.watch<WaypointRepository>().waypoints.isEmpty)
+          if (_showTip && context.watch<RunningRouteRepository>().routes.isEmpty)
              _buildTipBubble(context),
         ],
       ),
@@ -113,28 +113,28 @@ class _WaypointListPageState extends State<WaypointListPage>
     return ScaleTransition(
       scale: _fabScale,
       child: FloatingActionButton(
-        onPressed: () => _addWaypoint(context),
-        child: const Icon(Icons.add_location_alt),
+        onPressed: () => _addRoute(context),
+        child: const Icon(Icons.route),
       ),
     );
   }
 
-  Widget _buildBody(BuildContext context, List<Waypoint> waypoints) {
-    if (waypoints.isEmpty) { 
+  Widget _buildBody(BuildContext context, List<RunningRoute> routes) {
+    if (routes.isEmpty) { 
       return const Center(
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
-            Icon(Icons.map_outlined, size: 72, color: Colors.grey),
+            Icon(Icons.route_outlined, size: 72, color: Colors.grey),
             SizedBox(height: 16),
             Text(
-              'Nenhum ponto de rota cadastrado.',
+              'Nenhuma rota cadastrada.',
               textAlign: TextAlign.center,
               style: TextStyle(fontSize: 16),
             ),
             SizedBox(height: 8),
             Text(
-              'Use o botão "+" abaixo para adicionar o primeiro ponto.',
+              'Use o botão "+" abaixo para criar uma nova rota.',
               textAlign: TextAlign.center,
               style: TextStyle(color: Colors.grey),
             ),
@@ -144,18 +144,18 @@ class _WaypointListPageState extends State<WaypointListPage>
     }
 
     return ListView.separated(
-      itemCount: waypoints.length,
+      itemCount: routes.length,
       separatorBuilder: (context, index) => const Divider(height: 1), 
       itemBuilder: (context, index) {
-        final waypoint = waypoints[index];
+        final route = routes[index];
         return Dismissible(
-          key: Key(waypoint.timestamp.toIso8601String()),
+          key: Key(route.id),
           direction: DismissDirection.endToStart,
           
           onDismissed: (direction) {
-            context.read<WaypointRepository>().deleteWaypoint(waypoint.timestamp);
+            context.read<RunningRouteRepository>().deleteRoute(route.id);
             ScaffoldMessenger.of(context).showSnackBar(
-              const SnackBar(content: Text('Ponto de rota excluído.')),
+              const SnackBar(content: Text('Rota excluída.')),
             );
           },
           
@@ -167,15 +167,11 @@ class _WaypointListPageState extends State<WaypointListPage>
           ),
           
           child: ListTile(
-            leading: const Icon(Icons.location_pin),
-            title: Text('Lat: ${waypoint.latitude.toStringAsFixed(4)}'),
-            subtitle: Text('Lon: ${waypoint.longitude.toStringAsFixed(4)}'),
-            trailing: Text(
-              '${waypoint.timestamp.hour}:${waypoint.timestamp.minute.toString().padLeft(2, '0')}',
-              style: const TextStyle(fontSize: 12, color: Colors.grey),
-            ),
+            leading: const Icon(Icons.route),
+            title: Text(route.name),
+            subtitle: Text('Waypoints: ${route.waypoints.length} - Distância (simulada): ${route.totalDistanceInKm.toStringAsFixed(2)} km'),
             onTap: () {
-              _editWaypoint(context, waypoint);
+              _editRoute(context, route);
             },
           ),
         );
@@ -184,7 +180,6 @@ class _WaypointListPageState extends State<WaypointListPage>
   }
 
   // --- O resto dos métodos de UI (Tutorial, OptOut, TipBubble) ---
-
   Widget _buildTutorialOverlay(BuildContext context) {
     return Positioned.fill(
       child: Container(
@@ -200,7 +195,7 @@ class _WaypointListPageState extends State<WaypointListPage>
                 Text('Tutorial', style: Theme.of(context).textTheme.titleLarge),
                 const SizedBox(height: 12),
                 const Text(
-                  'Aqui você verá seus pontos de rota salvos.\nUse o botão flutuante para adicionar um novo ponto.',
+                  'Aqui você verá suas rotas de corrida.\nUse o botão "+" para adicionar uma nova rota.',
                   textAlign: TextAlign.center,
                 ),
                 const SizedBox(height: 16),
@@ -255,7 +250,7 @@ class _WaypointListPageState extends State<WaypointListPage>
             boxShadow: const [BoxShadow(color: Colors.black26, blurRadius: 6)],
           ),
           child: Text(
-            'Toque aqui para adicionar um ponto',
+            'Toque aqui para adicionar uma rota',
             style: Theme.of(context).textTheme.bodySmall?.copyWith(color: Colors.white),
           ),
         ),
