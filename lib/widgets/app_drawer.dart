@@ -8,32 +8,24 @@ import 'package:runsafe/utils/app_colors.dart';
 class AppDrawer extends StatelessWidget {
   const AppDrawer({super.key});
 
-  // 1. MUDANÇA NA LÓGICA DO AVATAR
   Widget _buildUserAvatar(BuildContext context, ProfileRepository repository) {
     const double avatarRadius = 36.0;
     const String userInitials = "BT";
 
-    // O CircleAvatar agora terá um fundo padrão...
     return CircleAvatar(
       radius: avatarRadius,
       backgroundColor: AppColors.navy,
-      // ...e seu 'child' será ou a foto ou as iniciais.
       child: (repository.photoPath != null)
-          // SE TIVER FOTO:
-          ? ClipOval( // Usamos ClipOval para deixar a imagem redonda
+          ? ClipOval(
               child: Image.file(
                 File(repository.photoPath!),
-                fit: BoxFit.cover, // Garante que a imagem preencha o círculo
-                width: avatarRadius * 2,  // 72dp
-                height: avatarRadius * 2, // 72dp
-                
-                // 2. ESPECIFICAÇÃO DE PERFORMANCE DO PRD 
-                // Define o tamanho máximo da imagem em memória.
+                fit: BoxFit.cover,
+                width: avatarRadius * 2,
+                height: avatarRadius * 2,
                 cacheWidth: 256, 
                 cacheHeight: 256,
               ),
             )
-          // SE NÃO TIVER FOTO (FALLBACK):
           : const Text(
               userInitials,
               style: TextStyle(
@@ -44,8 +36,6 @@ class AppDrawer extends StatelessWidget {
             ),
     );
   }
-
-  // (O restante do arquivo é igual ao que fizemos na Etapa 3)
 
   void _showPhotoOptions(BuildContext context, ProfileRepository repository) {
     showModalBottomSheet(
@@ -158,6 +148,18 @@ class AppDrawer extends StatelessWidget {
               Navigator.of(context).pop();
             },
           ),
+
+          // --- O BLOCO NOVO JÁ ESTÁ AQUI E CORRIGIDO ---
+          ListTile(
+            leading: const Icon(Icons.flag), 
+            title: const Text('Minhas Metas'), 
+            onTap: () {
+              Navigator.of(context).pop(); 
+              Navigator.of(context).pushNamed('/weekly-goals'); 
+            },
+          ),
+          // ------------------------------------------
+          
         ],
       ),
     );

@@ -68,3 +68,4 @@ A IA me atendeu de forma correta e prestativa.
 Conclui-se que a implementação do PRD foi bem-sucedida e que o uso da IA como ferramenta de apoio foi extremamente valioso, embora exija supervisão constante e senso crítico do desenvolvedor. O aplicativo RunSafe agora possui uma funcionalidade de perfil mais rica e personalizada, implementada com boas práticas de arquitetura, performance e conformidade (LGPD/A11Y).
 
 ---
+

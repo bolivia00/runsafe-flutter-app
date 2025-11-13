@@ -22,3 +22,4 @@ Checklist preenchido conforme o item 6.4 do PRD.
   - *(Pendente - A ser feito pelo aluno como parte dos entregáveis finais).*
 - [ ] **Slides prontos e apresentados para a turma**
   - *(Pendente - A ser feito pelo aluno como parte dos entregáveis finais).*
+  
