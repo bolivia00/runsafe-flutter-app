@@ -9,6 +9,7 @@ class AppDrawer extends StatelessWidget {
   const AppDrawer({super.key});
 
   Widget _buildUserAvatar(BuildContext context, ProfileRepository repository) {
+    // ... (copie seu método _buildUserAvatar existente aqui) ...
     const double avatarRadius = 36.0;
     const String userInitials = "BT";
 
@@ -22,7 +23,7 @@ class AppDrawer extends StatelessWidget {
                 fit: BoxFit.cover,
                 width: avatarRadius * 2,
                 height: avatarRadius * 2,
-                cacheWidth: 256, 
+                cacheWidth: 256,
                 cacheHeight: 256,
               ),
             )
@@ -38,6 +39,7 @@ class AppDrawer extends StatelessWidget {
   }
 
   void _showPhotoOptions(BuildContext context, ProfileRepository repository) {
+    // ... (copie seu método _showPhotoOptions existente aqui) ...
     showModalBottomSheet(
       context: context,
       builder: (ctx) {
@@ -148,25 +150,39 @@ class AppDrawer extends StatelessWidget {
               Navigator.of(context).pop();
             },
           ),
-
-          // --- O BLOCO NOVO JÁ ESTÁ AQUI E CORRIGIDO ---
+          // TODOS OS NOVOS ITENS DE MENU:
           ListTile(
-            leading: const Icon(Icons.flag), 
-            title: const Text('Minhas Metas'), 
+            leading: const Icon(Icons.flag),
+            title: const Text('Minhas Metas'),
             onTap: () {
-              Navigator.of(context).pop(); 
-              Navigator.of(context).pushNamed('/weekly-goals'); 
+              Navigator.of(context).pop();
+              Navigator.of(context).pushNamed('/weekly-goals');
             },
           ),
-          // ------------------------------------------
           ListTile(
-  leading: const Icon(Icons.warning_amber), // Novo Ícone
-  title: const Text('Alertas de Segurança'), // Novo Texto
-  onTap: () {
-    Navigator.of(context).pop(); // Fecha o drawer
-    Navigator.of(context).pushNamed('/safety-alerts'); // Navega para a nova rota
-  },
-),
+            leading: const Icon(Icons.warning_amber),
+            title: const Text('Alertas de Segurança'),
+            onTap: () {
+              Navigator.of(context).pop();
+              Navigator.of(context).pushNamed('/safety-alerts');
+            },
+          ),
+          ListTile(
+            leading: const Icon(Icons.location_pin),
+            title: const Text('Pontos de Rota'),
+            onTap: () {
+              Navigator.of(context).pop();
+              Navigator.of(context).pushNamed('/waypoints');
+            },
+          ),
+          ListTile(
+            leading: const Icon(Icons.route),
+            title: const Text('Minhas Rotas'),
+            onTap: () {
+              Navigator.of(context).pop();
+              Navigator.of(context).pushNamed('/running-routes');
+            },
+          ),
         ],
       ),
     );

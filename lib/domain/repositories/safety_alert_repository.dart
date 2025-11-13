@@ -13,7 +13,6 @@ class SafetyAlertRepository extends ChangeNotifier {
   List<SafetyAlert> _alerts = [];
   List<SafetyAlert> get alerts => _alerts;
 
-  // Carrega os alertas salvos
   Future<void> loadAlerts() async {
     final jsonString = await _storageService.getSafetyAlertsJson();
     if (jsonString != null) {
@@ -31,7 +30,6 @@ class SafetyAlertRepository extends ChangeNotifier {
     notifyListeners();
   }
 
-  // Salva a lista de alertas atual no SharedPreferences
   Future<void> _saveAlerts() async {
     final List<Map<String, dynamic>> jsonList = _alerts
         .map((entity) => _mapper.toDto(entity))
@@ -42,14 +40,12 @@ class SafetyAlertRepository extends ChangeNotifier {
     await _storageService.saveSafetyAlertsJson(jsonString);
   }
 
-  // Adiciona um novo alerta
   Future<void> addAlert(SafetyAlert alert) async {
     _alerts.insert(0, alert);
     await _saveAlerts();
     notifyListeners();
   }
 
-  // Edita um alerta existente
   Future<void> editAlert(SafetyAlert updatedAlert) async {
     final index = _alerts.indexWhere((alert) => alert.id == updatedAlert.id);
     if (index != -1) {
@@ -59,7 +55,6 @@ class SafetyAlertRepository extends ChangeNotifier {
     }
   }
 
-  // Exclui um alerta
   Future<void> deleteAlert(String alertId) async {
     _alerts.removeWhere((alert) => alert.id == alertId);
     await _saveAlerts();

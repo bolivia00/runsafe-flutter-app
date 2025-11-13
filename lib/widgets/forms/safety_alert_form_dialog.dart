@@ -2,7 +2,6 @@ import 'package:flutter/material.dart';
 import 'package:runsafe/domain/entities/safety_alert.dart';
 import 'package:uuid/uuid.dart';
 
-/// Função pública para chamar o formulário
 Future<SafetyAlert?> showSafetyAlertFormDialog(
   BuildContext context, {
   SafetyAlert? initial,
@@ -22,7 +21,6 @@ class _SafetyAlertFormDialog extends StatefulWidget {
 }
 
 class _SafetyAlertFormDialogState extends State<_SafetyAlertFormDialog> {
-  // Controladores
   late final TextEditingController _descriptionController;
   AlertType _selectedType = AlertType.other;
   double _severity = 1.0;
