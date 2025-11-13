@@ -4,7 +4,6 @@ import 'package:runsafe/domain/repositories/weekly_goal_repository.dart';
 import 'package:runsafe/domain/entities/weekly_goal.dart';
 import 'package:runsafe/widgets/forms/weekly_goal_form_dialog.dart';
 
-// 1. Convertemos para StatefulWidget e adicionamos o 'mixin' de animação
 class WeeklyGoalListPage extends StatefulWidget {
   const WeeklyGoalListPage({super.key});
 
@@ -12,15 +11,12 @@ class WeeklyGoalListPage extends StatefulWidget {
   State<WeeklyGoalListPage> createState() => _WeeklyGoalListPageState();
 }
 
-// 2. A DECLARAÇÃO DA CLASSE CORRIGIDA (com a chave '{' no final)
 class _WeeklyGoalListPageState extends State<WeeklyGoalListPage>
     with SingleTickerProviderStateMixin {
       
-  // --- Variáveis de Estado da UI (dos slides) ---
   bool _showTip = true;
   bool _showTutorial = false;
   
-  // Controladores para a animação do FAB (dos slides)
   late final AnimationController _fabController;
   late final Animation<double> _fabScale;
 
@@ -28,7 +24,6 @@ class _WeeklyGoalListPageState extends State<WeeklyGoalListPage>
   void initState() {
     super.initState();
     
-    // --- Lógica de Animação do FAB (dos slides) ---
     _fabController = AnimationController(
       duration: const Duration(milliseconds: 700),
       vsync: this, 
@@ -38,10 +33,11 @@ class _WeeklyGoalListPageState extends State<WeeklyGoalListPage>
       CurvedAnimation(parent: _fabController, curve: Curves.elasticInOut),
     );
 
-    // Se a dica estiver ativa, o FAB começa a pulsar
-    if (_showTip) {
-      _fabController.repeat(reverse: true);
-    }
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (mounted && context.read<WeeklyGoalRepository>().goals.isEmpty && _showTip) {
+        _fabController.repeat(reverse: true);
+      }
+    });
   }
 
   @override
@@ -50,16 +46,14 @@ class _WeeklyGoalListPageState extends State<WeeklyGoalListPage>
     super.dispose();
   }
 
-  /// Função para adicionar meta (lógica que já tínhamos + lógica dos slides)
+  /// Função para ADICIONAR meta
   void _addGoal(BuildContext context) async {
     final repository = context.read<WeeklyGoalRepository>();
-    final newGoal = await showWeeklyGoalFormDialog(context);
+    final newGoal = await showWeeklyGoalFormDialog(context); 
 
     if (newGoal != null) {
       repository.addGoal(newGoal);
       
-      // Quando o usuário adiciona um item, escondemos a dica
-      // e paramos a animação do FAB.
       if (_showTip) {
         setState(() => _showTip = false);
         _fabController.stop();
@@ -68,53 +62,57 @@ class _WeeklyGoalListPageState extends State<WeeklyGoalListPage>
     }
   }
 
-  /// Constrói o layout da tela usando um Stack (dos slides)
+  /// Função para EDITAR meta
+  void _editGoal(BuildContext context, WeeklyGoal goalToEdit) async {
+    final repository = context.read<WeeklyGoalRepository>();
+    
+    final updatedGoal = await showWeeklyGoalFormDialog(
+      context,
+      initial: goalToEdit, 
+    );
+
+    if (updatedGoal != null) {
+      repository.editGoal(updatedGoal);
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
         title: const Text('Minhas Metas Semanais'),
         actions: [
-          // Botão para reativar o tutorial (bônus)
           IconButton(
             icon: const Icon(Icons.help_outline),
             onPressed: () => setState(() => _showTutorial = true),
           ),
         ],
       ),
-      // O FAB agora é um widget separado
       floatingActionButton: _buildFab(context),
       floatingActionButtonLocation: FloatingActionButtonLocation.endFloat,
       
       body: Stack(
         children: [
-          // 1. O conteúdo principal (nossa lista)
           SafeArea(
             child: Padding(
               padding: const EdgeInsets.all(16.0),
-              // O buildBody agora é um Consumer
               child: Consumer<WeeklyGoalRepository>(
                 builder: (context, repository, child) {
-                  return _buildBody(repository.goals); // Passa a lista
+                  return _buildBody(context, repository.goals); 
                 },
               ),
             ),
           ),
-          
-          // 2. O Overlay de Tutorial (se estiver ativo)
           if (_showTutorial) _buildTutorialOverlay(context),
-          
-          // 3. O botão de "Opt-Out" da dica
           _buildOptOutButton(context),
-          
-          // 4. A "Bolha de Dica" (se estiver ativa)
-          if (_showTip) _buildTipBubble(context),
+          // Bônus: A dica só aparece se a lista estiver vazia
+          if (_showTip && context.watch<WeeklyGoalRepository>().goals.isEmpty)
+             _buildTipBubble(context),
         ],
       ),
     );
   }
 
-  /// O FAB animado (dos slides)
   Widget _buildFab(BuildContext context) {
     return ScaleTransition(
       scale: _fabScale,
@@ -126,9 +124,9 @@ class _WeeklyGoalListPageState extends State<WeeklyGoalListPage>
   }
 
   /// O Corpo da tela (Estado Vazio vs. Lista)
-  Widget _buildBody(List<WeeklyGoal> goals) {
+  Widget _buildBody(BuildContext context, List<WeeklyGoal> goals) {
     if (goals.isEmpty) {
-      // Estado Vazio (dos slides)
+      // --- CÓDIGO DO ESTADO VAZIO (CORRIGIDO) ---
       return const Center(
         child: Column(
           mainAxisSize: MainAxisSize.min,
@@ -155,26 +153,51 @@ class _WeeklyGoalListPageState extends State<WeeklyGoalListPage>
       );
     }
 
-    // Lista de Metas (Nossa lógica de ontem)
+    // Lista de Metas
     return ListView.builder(
       itemCount: goals.length,
       itemBuilder: (context, index) {
         final goal = goals[index];
         final progress = (goal.progressPercentage * 100).toStringAsFixed(0);
 
-        return ListTile(
-          title: Text('Meta: ${goal.targetKm} km'),
-          subtitle: Text('Progresso: ${goal.currentKm} km ($progress%)'),
-          trailing: CircularProgressIndicator(
-            value: goal.progressPercentage,
-            backgroundColor: Colors.grey.shade300,
+        // --- 'Dismissible' para Excluir ---
+        return Dismissible(
+          key: Key(goal.id), // Agora 'goal.id' existe!
+          direction: DismissDirection.endToStart, 
+          
+          onDismissed: (direction) {
+            context.read<WeeklyGoalRepository>().deleteGoal(goal.id); //
+            
+            ScaffoldMessenger.of(context).showSnackBar(
+              const SnackBar(content: Text('Meta excluída com sucesso.')),
+            );
+          },
+          
+          background: Container(
+            color: Colors.red,
+            alignment: Alignment.centerRight,
+            padding: const EdgeInsets.symmetric(horizontal: 20.0),
+            child: const Icon(Icons.delete, color: Colors.white),
+          ),
+          
+          child: ListTile(
+            title: Text('Meta: ${goal.targetKm} km'),
+            subtitle: Text('Progresso: ${goal.currentKm} km ($progress%)'),
+            trailing: CircularProgressIndicator(
+              value: goal.progressPercentage,
+              backgroundColor: Colors.grey.shade300,
+            ),
+            onTap: () {
+              _editGoal(context, goal); //
+            },
           ),
         );
       },
     );
   }
 
-  /// O Overlay de Tutorial (dos slides)
+  // --- O resto dos métodos (Tutorial, OptOut, TipBubble) ---
+  
   Widget _buildTutorialOverlay(BuildContext context) {
     return Positioned.fill(
       child: Container(
@@ -206,7 +229,6 @@ class _WeeklyGoalListPageState extends State<WeeklyGoalListPage>
     );
   }
 
-  /// O Botão de Opt-Out (dos slides)
   Widget _buildOptOutButton(BuildContext context) {
     return Positioned(
       left: 16,
@@ -225,7 +247,6 @@ class _WeeklyGoalListPageState extends State<WeeklyGoalListPage>
     );
   }
 
-  /// A Bolha de Dica (dos slides)
   Widget _buildTipBubble(BuildContext context) {
     return Positioned(
       right: 16,
@@ -233,7 +254,6 @@ class _WeeklyGoalListPageState extends State<WeeklyGoalListPage>
       child: AnimatedBuilder(
         animation: _fabController,
         builder: (context, child) {
-          // Animação de "flutuar" (dos slides)
           final v = _fabController.value;
           return Transform.translate(
             offset: Offset(0, 5 * (1 - v)),
