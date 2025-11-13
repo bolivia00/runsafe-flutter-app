@@ -1,11 +1,11 @@
 import 'package:flutter/material.dart';
-import 'package:runsafe/domain/entities/weekly_goal.dart'; // Importa sua Entidade!
+import 'package:runsafe/domain/entities/weekly_goal.dart';
+// O import do 'uuid' não é mais necessário aqui, pois a própria Entidade já cuida disso.
 
-/// Esta é a função "pública" que a sua tela vai chamar.
-/// Ela retorna a Entidade pronta, ou null se o usuário cancelar.
+// --- CORREÇÃO: Removido o 'class' antes de 'Future' ---
 Future<WeeklyGoal?> showWeeklyGoalFormDialog(
   BuildContext context, {
-  WeeklyGoal? initial, // Opcional, para o modo "Editar"
+  WeeklyGoal? initial,
 }) {
   return showDialog<WeeklyGoal>(
     context: context,
@@ -13,7 +13,6 @@ Future<WeeklyGoal?> showWeeklyGoalFormDialog(
   );
 }
 
-/// Este é o widget interno do formulário.
 class _WeeklyGoalFormDialog extends StatefulWidget {
   final WeeklyGoal? initial;
   const _WeeklyGoalFormDialog({this.initial});
@@ -25,11 +24,9 @@ class _WeeklyGoalFormDialog extends StatefulWidget {
 class _WeeklyGoalFormDialogState extends State<_WeeklyGoalFormDialog> {
   final _formKey = GlobalKey<FormState>();
   
-  // 1. Controladores para os campos do formulário
   late final TextEditingController _targetKmController;
   late final TextEditingController _currentKmController;
 
-  // 2. Inicialização: preenche os campos se estiver em modo "Editar"
   @override
   void initState() {
     super.initState();
@@ -42,7 +39,6 @@ class _WeeklyGoalFormDialogState extends State<_WeeklyGoalFormDialog> {
     );
   }
 
-  // 3. Limpeza: faz o dispose dos controllers
   @override
   void dispose() {
     _targetKmController.dispose();
@@ -50,7 +46,6 @@ class _WeeklyGoalFormDialogState extends State<_WeeklyGoalFormDialog> {
     super.dispose();
   }
 
-  // 4. Feedback de Erro (conforme o PDF)
   void _showError(String message) {
     if (!mounted) return;
     ScaffoldMessenger.of(context).showSnackBar(
@@ -61,9 +56,7 @@ class _WeeklyGoalFormDialogState extends State<_WeeklyGoalFormDialog> {
     );
   }
 
-  // 5. Ação de Confirmação (o "coração" da lógica)
   void _onConfirm() {
-    // Validação mínima da UI
     final targetText = _targetKmController.text.trim();
     final currentText = _currentKmController.text.trim();
 
@@ -80,26 +73,24 @@ class _WeeklyGoalFormDialogState extends State<_WeeklyGoalFormDialog> {
       return;
     }
 
-    // 6. Defesa em Profundidade: A UI tenta criar a Entidade.
-    // A Entidade (nosso código de antes) vai validar as regras de negócio
-    // (invariantes) e pode "falhar" (lançar um erro).
     try {
+      // --- LÓGICA DE ID CORRIGIDA ---
+      // 1. Se estamos editando, passamos o ID da meta original.
+      // 2. Se estamos criando, deixamos o ID nulo (a Entidade vai gerar um novo).
       final newGoal = WeeklyGoal(
+        id: widget.initial?.id, 
         targetKm: targetKm,
         currentKm: currentKm,
+        // (Se estivermos editando, os outros campos como userId serão mantidos)
       );
 
-      // 7. Sucesso! Retorna a entidade pronta
       Navigator.of(context).pop(newGoal);
 
     } catch (e) {
-      // Exceção! A Entidade recusou os dados (ex: targetKm <= 0)
-      // Mostra o erro da nossa própria Entidade para o usuário.
       _showError(e.toString().replaceAll('ArgumentError: ', ''));
     }
   }
 
-  // 8. Construção da UI (AlertDialog)
   @override
   Widget build(BuildContext context) {
     final isEditing = widget.initial != null;
@@ -131,11 +122,11 @@ class _WeeklyGoalFormDialogState extends State<_WeeklyGoalFormDialog> {
       ),
       actions: [
         TextButton(
-          onPressed: () => Navigator.of(context).pop(null), // Retorna null
+          onPressed: () => Navigator.of(context).pop(null), 
           child: const Text('Cancelar'),
         ),
         ElevatedButton(
-          onPressed: _onConfirm, // Chama nossa lógica de validação
+          onPressed: _onConfirm, 
           child: Text(isEditing ? 'Salvar' : 'Adicionar'),
         ),
       ],
