@@ -9,7 +9,6 @@ class AppDrawer extends StatelessWidget {
   const AppDrawer({super.key});
 
   Widget _buildUserAvatar(BuildContext context, ProfileRepository repository) {
-    // ... (copie seu método _buildUserAvatar existente aqui) ...
     const double avatarRadius = 36.0;
     const String userInitials = "BT";
 
@@ -39,7 +38,6 @@ class AppDrawer extends StatelessWidget {
   }
 
   void _showPhotoOptions(BuildContext context, ProfileRepository repository) {
-    // ... (copie seu método _showPhotoOptions existente aqui) ...
     showModalBottomSheet(
       context: context,
       builder: (ctx) {
@@ -106,7 +104,20 @@ class AppDrawer extends StatelessWidget {
                     fontSize: 16,
                   ),
                 ),
-                accountEmail: const Text("Editar foto de perfil"),
+                // --- AQUI ESTÁ A MUDANÇA ---
+                // Envolvemos o texto em um GestureDetector
+                accountEmail: GestureDetector(
+                  onTap: () {
+                    // Ao clicar no texto, abre o menu também
+                    _showPhotoOptions(context, repository);
+                  },
+                  child: const Text(
+                    "Editar foto de perfil",
+                    style: TextStyle(decoration: TextDecoration.underline), // Bônus: Sublinhado para parecer link
+                  ),
+                ),
+                // ---------------------------
+                
                 currentAccountPicture: Tooltip(
                   message: "Alterar foto de perfil",
                   child: GestureDetector(
@@ -150,7 +161,6 @@ class AppDrawer extends StatelessWidget {
               Navigator.of(context).pop();
             },
           ),
-          // TODOS OS NOVOS ITENS DE MENU:
           ListTile(
             leading: const Icon(Icons.flag),
             title: const Text('Minhas Metas'),
