@@ -184,7 +184,7 @@
     "imports": [
       "package:flutter/material.dart",
       "package:runsafe/domain/dto/safety_alert_dto.dart",
-      "package:runsafe/services/safety_alerts_local_dao.dart"
+      "package:runsafe/core/services/safety_alerts_local_dao.dart"
     ],
     "existing_files": [
       "lib/widgets/safety_alert_list_item.dart",

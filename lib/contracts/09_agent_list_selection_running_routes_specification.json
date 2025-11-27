@@ -88,7 +88,7 @@
     "imports": [
       "package:flutter/material.dart",
       "package:runsafe/domain/dto/running_route_dto.dart",
-      "package:runsafe/services/running_routes_local_dao.dart"
+      "package:runsafe/core/services/running_routes_local_dao.dart"
     ],
     "existing_files": [
       "lib/widgets/running_route_list_item.dart",

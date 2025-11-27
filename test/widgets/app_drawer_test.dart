@@ -1,8 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:provider/provider.dart';
-import 'package:runsafe/repositories/profile_repository.dart';
-import 'package:runsafe/widgets/app_drawer.dart';
+import 'package:runsafe/features/profile/data/repositories/profile_repository.dart';
+import 'package:runsafe/core/widgets/app_drawer.dart';
 import 'package:image_picker/image_picker.dart'; // <-- 1. IMPORTAÇÃO ADICIONADA
 
 // 2. Criamos um "dublê" (Mock) do nosso ProfileRepository

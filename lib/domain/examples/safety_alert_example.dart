@@ -1,7 +1,7 @@
 // ignore_for_file: avoid_print
-import 'package:runsafe/domain/dto/safety_alert_dto.dart';
-import 'package:runsafe/domain/entities/safety_alert.dart';
-import 'package:runsafe/domain/mappers/safety_alert_mapper.dart';
+import 'package:runsafe/features/alerts/data/dtos/safety_alert_dto.dart';
+import 'package:runsafe/features/alerts/domain/entities/safety_alert.dart';
+import 'package:runsafe/features/alerts/data/mappers/safety_alert_mapper.dart';
 
 void runSafetyAlertExample() {
   print("\n--- Exemplo 2: SafetyAlert ---");

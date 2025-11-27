@@ -1,19 +1,19 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart'; 
-import 'package:runsafe/domain/repositories/weekly_goal_repository.dart';
-import 'package:runsafe/domain/repositories/safety_alert_repository.dart';
-import 'package:runsafe/domain/repositories/waypoint_repository.dart'; 
-import 'package:runsafe/domain/repositories/running_route_repository.dart'; 
-import 'package:runsafe/repositories/profile_repository.dart'; 
-import 'package:runsafe/screens/home_screen.dart';
-import 'package:runsafe/screens/onboarding_screen.dart';
-import 'package:runsafe/screens/privacy_policy_screen.dart';
-import 'package:runsafe/screens/splash_screen.dart';
-import 'package:runsafe/screens/weekly_goal_list_page.dart';
-import 'package:runsafe/screens/safety_alert_list_page.dart';
-import 'package:runsafe/screens/waypoint_list_page.dart';
-import 'package:runsafe/screens/running_route_list_page.dart'; 
-import 'package:runsafe/utils/app_colors.dart';
+import 'package:runsafe/features/goals/data/repositories/weekly_goal_repository.dart';
+import 'package:runsafe/features/alerts/data/repositories/safety_alert_repository.dart';
+import 'package:runsafe/features/routes/data/repositories/waypoint_repository.dart'; 
+import 'package:runsafe/features/routes/data/repositories/running_route_repository.dart'; 
+import 'package:runsafe/features/profile/data/repositories/profile_repository.dart'; 
+import 'package:runsafe/features/onboarding/presentation/pages/home_screen.dart';
+import 'package:runsafe/features/onboarding/presentation/pages/onboarding_screen.dart';
+import 'package:runsafe/features/onboarding/presentation/pages/privacy_policy_screen.dart';
+import 'package:runsafe/features/onboarding/presentation/pages/splash_screen.dart';
+import 'package:runsafe/features/goals/presentation/pages/weekly_goal_list_page.dart';
+import 'package:runsafe/features/alerts/presentation/pages/safety_alert_list_page.dart';
+import 'package:runsafe/features/routes/presentation/pages/waypoint_list_page.dart';
+import 'package:runsafe/features/routes/presentation/pages/running_route_list_page.dart'; 
+import 'package:runsafe/core/utils/app_colors.dart';
 
 void main() {
   runApp(

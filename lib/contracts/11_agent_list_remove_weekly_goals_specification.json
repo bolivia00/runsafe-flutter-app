@@ -139,7 +139,7 @@
     "imports": [
       "package:flutter/material.dart",
       "package:runsafe/domain/dto/weekly_goal_dto.dart",
-      "package:runsafe/services/weekly_goals_local_dao.dart"
+      "package:runsafe/core/services/weekly_goals_local_dao.dart"
     ],
     "existing_files": [
       "lib/widgets/weekly_goal_list_item.dart",

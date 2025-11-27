@@ -132,7 +132,7 @@
     "imports": [
       "package:flutter/material.dart",
       "package:runsafe/domain/dto/waypoint_dto.dart",
-      "package:runsafe/services/waypoints_local_dao.dart"
+      "package:runsafe/core/services/waypoints_local_dao.dart"
     ],
     "existing_files": [
       "lib/widgets/waypoint_list_item.dart",
