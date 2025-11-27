@@ -1,0 +1,120 @@
+{
+  "specification": "weekly_goal_actions_dialog",
+  "version": "1.0",
+  "description": "Diálogo de ações para weekly goals com opções de Editar, Remover e Fechar",
+  "entity": {
+    "name": "WeeklyGoal",
+    "properties": [
+      {
+        "name": "id",
+        "type": "String",
+        "description": "Identificador único da meta semanal (UUID v4)"
+      },
+      {
+        "name": "userId",
+        "type": "String",
+        "description": "ID do usuário que possui a meta"
+      },
+      {
+        "name": "targetKm",
+        "type": "double",
+        "constraint": "> 0",
+        "description": "Distância alvo em quilômetros"
+      },
+      {
+        "name": "currentKm",
+        "type": "double",
+        "constraint": ">= 0",
+        "description": "Distância percorrida atualmente em quilômetros"
+      },
+      {
+        "name": "progressPercentage",
+        "type": "double",
+        "computed": "true",
+        "formula": "(currentKm / targetKm) * 100, clamped 0-100%",
+        "description": "Percentual de progresso da meta"
+      }
+    ],
+    "invariants": [
+      "targetKm deve ser maior que zero",
+      "currentKm não pode ser negativo",
+      "progressPercentage é derivado (somente leitura)"
+    ]
+  },
+  "dialog_structure": {
+    "title": "String",
+    "example_title": "Meta Semanal",
+    "content": "Text with goal details and progress",
+    "example_content": "Alvo: 50.00 km\nProgresso: 37.50 / 50.00 km (75.0%)",
+    "barrierDismissible": false,
+    "actions": [
+      {
+        "label": "Editar",
+        "action": "edit",
+        "behavior": "Chama callback onEdit(weeklyGoalDto) e fecha o diálogo",
+        "color": "Colors.blue"
+      },
+      {
+        "label": "Remover",
+        "action": "delete",
+        "behavior": "Abre AlertDialog de confirmação; se confirmado, chama onDelete(weeklyGoalDto), remove da DAO e atualiza listagem",
+        "color": "Colors.red"
+      },
+      {
+        "label": "Fechar",
+        "action": "close",
+        "behavior": "Fecha o diálogo sem executar nenhuma ação",
+        "color": "Colors.grey"
+      }
+    ]
+  },
+  "progress_display": {
+    "format": "X.XX / Y.YY km (Z.Z%)",
+    "example": "37.50 / 50.00 km (75.0%)",
+    "precision": "2 casas decimais para distâncias, 1 para percentual",
+    "visual_indicator": "LinearProgressIndicator com valor entre 0.0 e 1.0"
+  },
+  "integration_points": {
+    "widget_file": "lib/widgets/weekly_goal_actions_dialog.dart",
+    "dialog_class": "WeeklyGoalActionsDialog",
+    "function_signature": "Future<void> showWeeklyGoalActionsDialog(BuildContext context, WeeklyGoalDto goal, {required VoidCallback onEdit, required VoidCallback onDelete})",
+    "usage_in_list_item": "GestureDetector(onLongPress: () => showWeeklyGoalActionsDialog(...), child: ListTile(...))",
+    "dao_integration": "Usar WeeklyGoalsLocalDaoSharedPrefs().upsertAll() ou clear() para remover"
+  },
+  "confirmation_dialog": {
+    "title": "Confirmar remoção",
+    "message": "Deseja remover a meta de '{targetKm}' km? Esta ação não pode ser desfeita.",
+    "example_message": "Deseja remover a meta de '50.00' km? Esta ação não pode ser desfeita.",
+    "cancel_button": "Cancelar",
+    "confirm_button": "Remover",
+    "confirm_button_color": "Colors.red"
+  },
+  "state_management": {
+    "approach": "Stateless dialog + callbacks",
+    "parent_widget": "WeeklyGoalListWidget (deve ser Stateful para atualizar após delete)",
+    "reload_after_delete": "Chamar setState() ou _loadGoals() para recarregar a listagem",
+    "snackbar_feedback": "Opcional: exibir SnackBar confirmando a remoção com distância alvo da meta"
+  },
+  "acceptance_criteria": [
+    "1. Long-press em WeeklyGoalListItem exibe o diálogo com 3 ações",
+    "2. Editar: abre formulário/tela de edição e fecha o diálogo",
+    "3. Remover: abre AlertDialog de confirmação; ao confirmar, remove via DAO e recarrega lista",
+    "4. Fechar: fecha o diálogo sem ações",
+    "5. Diálogo é não-dismissable (apenas botões internos fecham)",
+    "6. Título exibe 'Meta Semanal'",
+    "7. Conteúdo exibe: Alvo (X.XX km), Progresso (Y.YY / Z.ZZ km) e percentual (A.A%)",
+    "8. Percentual nunca ultrapassa 100% (clamped)"
+  ],
+  "dependencies": {
+    "imports": [
+      "package:flutter/material.dart",
+      "package:runsafe/domain/dto/weekly_goal_dto.dart",
+      "package:runsafe/services/weekly_goals_local_dao.dart"
+    ],
+    "existing_files": [
+      "lib/widgets/weekly_goal_list_item.dart",
+      "lib/widgets/weekly_goal_list_widget.dart",
+      "lib/services/weekly_goals_local_dao.dart"
+    ]
+  }
+}

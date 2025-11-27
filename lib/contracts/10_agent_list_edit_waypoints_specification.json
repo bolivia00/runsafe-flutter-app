@@ -1,0 +1,171 @@
+{
+  "specification": "waypoint_edit_dialog",
+  "version": "1.0",
+  "description": "Diálogo de edição para waypoints com ícone lápis",
+  "entity": {
+    "name": "Waypoint",
+    "properties": [
+      {
+        "name": "latitude",
+        "type": "double",
+        "editable": true,
+        "required": true,
+        "constraint": "-90.0 <= latitude <= 90.0",
+        "precision": 6,
+        "description": "Coordenada de latitude"
+      },
+      {
+        "name": "longitude",
+        "type": "double",
+        "editable": true,
+        "required": true,
+        "constraint": "-180.0 <= longitude <= 180.0",
+        "precision": 6,
+        "description": "Coordenada de longitude"
+      },
+      {
+        "name": "timestamp",
+        "type": "DateTime",
+        "editable": false,
+        "description": "Data e hora de criação"
+      }
+    ],
+    "invariants": [
+      "Latitude deve estar entre -90 e 90",
+      "Longitude deve estar entre -180 e 180",
+      "Ambas coordenadas são obrigatórias"
+    ]
+  },
+  "dialog_structure": {
+    "title": "Editar Waypoint",
+    "barrierDismissible": false,
+    "form_fields": [
+      {
+        "label": "Latitude",
+        "field_name": "latitude",
+        "type": "TextField (numeric)",
+        "required": true,
+        "input_type": "TextInputType.numberWithOptions(decimal: true)",
+        "range": "-90.0 a 90.0",
+        "precision": "6 casas decimais",
+        "example_value": "-16.502301",
+        "validation": "Campo obrigatório, deve ser um número entre -90 e 90"
+      },
+      {
+        "label": "Longitude",
+        "field_name": "longitude",
+        "type": "TextField (numeric)",
+        "required": true,
+        "input_type": "TextInputType.numberWithOptions(decimal: true)",
+        "range": "-180.0 a 180.0",
+        "precision": "6 casas decimais",
+        "example_value": "-68.119301",
+        "validation": "Campo obrigatório, deve ser um número entre -180 e 180"
+      },
+      {
+        "label": "Data/Hora de Criação",
+        "field_name": "timestamp",
+        "type": "Text (read-only)",
+        "editable": false,
+        "display_format": "dd/mm/yyyy hh:mm:ss",
+        "example_value": "27/11/2025 14:30:45"
+      }
+    ]
+  },
+  "dialog_actions": {
+    "save_button": {
+      "label": "Salvar",
+      "action": "save",
+      "behavior": "Valida coordenadas, persiste via DAO, exibe SnackBar, fecha diálogo",
+      "color": "Colors.blue"
+    },
+    "cancel_button": {
+      "label": "Cancelar",
+      "action": "cancel",
+      "behavior": "Fecha o diálogo sem salvar alterações",
+      "color": "Colors.grey"
+    }
+  },
+  "integration_points": {
+    "widget_file": "lib/widgets/waypoint_list_item.dart (modificar)",
+    "edit_dialog_file": "lib/widgets/waypoint_edit_dialog.dart (novo, opcional)",
+    "trigger": "trailing IconButton(icon: Icons.edit) em WaypointListItem",
+    "function_signature": "Future<void> showWaypointEditDialog(BuildContext context, WaypointDto waypoint, Function(WaypointDto) onSave)",
+    "dao_integration": "Usar WaypointsLocalDaoSharedPrefs().upsertAll([updatedWaypoint])"
+  },
+  "data_flow": {
+    "step_1": "Usuário toca no ícone edit em WaypointListItem",
+    "step_2": "WaypointListWidget chama showWaypointEditDialog()",
+    "step_3": "Diálogo exibe formulário pré-preenchido com coordenadas atuais",
+    "step_4": "Usuário edita latitude e/ou longitude",
+    "step_5": "Validação local das coordenadas (range e formato)",
+    "step_6": "DAO persiste via upsertAll() dentro de try/catch",
+    "step_7": "Se sucesso: SnackBar 'Waypoint atualizado com sucesso', diálogo fecha",
+    "step_8": "Se erro: SnackBar com mensagem de erro, diálogo permanece aberto"
+  },
+  "error_handling": {
+    "validation_errors": [
+      "Latitude vazia → 'Por favor, insira a latitude'",
+      "Latitude inválida → 'Latitude deve ser um número válido'",
+      "Latitude fora do range → 'Latitude deve estar entre -90 e 90'",
+      "Longitude vazia → 'Por favor, insira a longitude'",
+      "Longitude inválida → 'Longitude deve ser um número válido'",
+      "Longitude fora do range → 'Longitude deve estar entre -180 e 180'"
+    ],
+    "persistence_errors": [
+      "Erro ao salvar → 'Erro ao atualizar waypoint. Tente novamente.'"
+    ],
+    "user_feedback": "SnackBar com ação 'Fechar' ou 'Tentar novamente'"
+  },
+  "state_management": {
+    "approach": "Stateless dialog com callback para parent widget",
+    "parent_widget": "WaypointListWidget (Stateful)",
+    "reload_after_save": "Chamar _loadWaypoints() para recarregar a listagem",
+    "local_state_in_dialog": "TextEditingController para latitude, TextEditingController para longitude"
+  },
+  "coordinate_formatting": {
+    "display_precision": "6 casas decimais",
+    "font": "Monospace (para melhor alinhamento)",
+    "example_display": "-16.502301"
+  },
+  "acceptance_criteria": [
+    "1. IconButton com icon: Icons.edit aparece como trailing em cada ListTile",
+    "2. Tap no ícone edit abre AlertDialog com título 'Editar Waypoint'",
+    "3. Diálogo é não-dismissable (apenas botões fecham)",
+    "4. Campo Latitude vem pré-preenchido com valor atual (6 casas decimais)",
+    "5. Campo Longitude vem pré-preenchido com valor atual (6 casas decimais)",
+    "6. Campo Timestamp aparece como read-only com formato dd/mm/yyyy hh:mm:ss",
+    "7. Validação impede salvar com latitude ou longitude vazias",
+    "8. Validação impede salvar com valores não-numéricos",
+    "9. Validação impede salvar com latitude fora do range -90 a 90",
+    "10. Validação impede salvar com longitude fora do range -180 a 180",
+    "11. Botão Salvar persiste via DAO e exibe SnackBar",
+    "12. Botão Cancelar fecha diálogo sem salvar",
+    "13. Após salvar com sucesso, diálogo fecha e lista recarrega",
+    "14. Erros de persistência exibem SnackBar com descrição"
+  ],
+  "dependencies": {
+    "imports": [
+      "package:flutter/material.dart",
+      "package:runsafe/domain/dto/waypoint_dto.dart",
+      "package:runsafe/services/waypoints_local_dao.dart"
+    ],
+    "existing_files": [
+      "lib/widgets/waypoint_list_item.dart",
+      "lib/widgets/waypoint_list_widget.dart",
+      "lib/services/waypoints_local_dao.dart"
+    ]
+  },
+  "example_code_structure": {
+    "dialog_function": "showWaypointEditDialog(BuildContext context, WaypointDto waypoint, Function(WaypointDto) onSave)",
+    "form_validation": "validateCoordinates(double lat, double lon) → Map<String, String> errors",
+    "persist_logic": "upsert via dao.upsertAll() with try/catch",
+    "snackbar_feedback": "ScaffoldMessenger.of(context).showSnackBar(...)"
+  },
+  "input_formatting": {
+    "latitude_pattern": "^-?\\d{1,2}(\\.\\d{1,6})?$",
+    "longitude_pattern": "^-?\\d{1,3}(\\.\\d{1,6})?$",
+    "decimal_separator": ".",
+    "negative_sign": "-"
+  }
+}

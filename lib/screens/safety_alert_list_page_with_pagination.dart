@@ -1,39 +1,47 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:runsafe/domain/repositories/safety_alert_repository.dart';
-import 'package:runsafe/domain/entities/safety_alert.dart';
+import 'package:runsafe/domain/dto/safety_alert_dto.dart';
 import 'package:runsafe/widgets/forms/safety_alert_form_dialog.dart';
+import 'package:runsafe/widgets/safety_alert_list_widget.dart';
+import 'package:runsafe/domain/mappers/safety_alert_mapper.dart';
 
-class SafetyAlertListPage extends StatefulWidget {
-  const SafetyAlertListPage({super.key});
+/// Página de listagem de alertas de segurança com suporte a paginação e filtros
+class SafetyAlertListPageWithPagination extends StatefulWidget {
+  const SafetyAlertListPageWithPagination({super.key});
 
   @override
-  State<SafetyAlertListPage> createState() => _SafetyAlertListPageState();
+  State<SafetyAlertListPageWithPagination> createState() =>
+      _SafetyAlertListPageWithPaginationState();
 }
 
-class _SafetyAlertListPageState extends State<SafetyAlertListPage>
+class _SafetyAlertListPageWithPaginationState
+    extends State<SafetyAlertListPageWithPagination>
     with SingleTickerProviderStateMixin {
-  
   bool _showTip = true;
   bool _showTutorial = false;
-  
+
   late final AnimationController _fabController;
   late final Animation<double> _fabScale;
+
+  final SafetyAlertMapper _mapper = SafetyAlertMapper();
 
   @override
   void initState() {
     super.initState();
-    
+
     _fabController = AnimationController(
       duration: const Duration(milliseconds: 700),
-      vsync: this, 
+      vsync: this,
     );
-    _fabScale = Tween<double>(begin: 1.0, end: 1.15).animate( 
+    _fabScale = Tween<double>(begin: 1.0, end: 1.15).animate(
       CurvedAnimation(parent: _fabController, curve: Curves.elasticInOut),
     );
 
     WidgetsBinding.instance.addPostFrameCallback((_) {
-      if (mounted && context.read<SafetyAlertRepository>().alerts.isEmpty && _showTip) {
+      if (mounted &&
+          context.read<SafetyAlertRepository>().alerts.isEmpty &&
+          _showTip) {
         _fabController.repeat(reverse: true);
       }
     });
@@ -41,7 +49,7 @@ class _SafetyAlertListPageState extends State<SafetyAlertListPage>
 
   @override
   void dispose() {
-    _fabController.dispose(); 
+    _fabController.dispose();
     super.dispose();
   }
 
@@ -51,7 +59,7 @@ class _SafetyAlertListPageState extends State<SafetyAlertListPage>
 
     if (newAlert != null) {
       repository.addAlert(newAlert);
-      
+
       if (_showTip) {
         setState(() => _showTip = false);
         _fabController.stop();
@@ -60,15 +68,34 @@ class _SafetyAlertListPageState extends State<SafetyAlertListPage>
     }
   }
 
-  void _editAlert(BuildContext context, SafetyAlert alertToEdit) async {
-    final repository = context.read<SafetyAlertRepository>();
-    final updatedAlert = await showSafetyAlertFormDialog(
-      context,
-      initial: alertToEdit,
-    );
+  void _editAlert(BuildContext context, SafetyAlertDto alertDto) async {
+    try {
+      final alertEntity = _mapper.toEntity(alertDto);
 
-    if (updatedAlert != null) {
-      repository.editAlert(updatedAlert);
+      final repository = context.read<SafetyAlertRepository>();
+      final updatedAlert = await showSafetyAlertFormDialog(
+        context,
+        initial: alertEntity,
+      );
+
+      if (updatedAlert != null) {
+        repository.editAlert(updatedAlert);
+      }
+    } catch (e) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Erro ao editar alerta: $e')),
+      );
+    }
+  }
+
+  void _deleteAlert(BuildContext context, SafetyAlertDto alertDto) async {
+    try {
+      final repository = context.read<SafetyAlertRepository>();
+      repository.deleteAlert(alertDto.alert_id);
+    } catch (e) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Erro ao deletar alerta: $e')),
+      );
     }
   }
 
@@ -86,24 +113,18 @@ class _SafetyAlertListPageState extends State<SafetyAlertListPage>
       ),
       floatingActionButton: _buildFab(context),
       floatingActionButtonLocation: FloatingActionButtonLocation.endFloat,
-      
       body: Stack(
         children: [
           SafeArea(
-            child: Padding(
-              padding: const EdgeInsets.all(16.0),
-              child: Consumer<SafetyAlertRepository>(
-                builder: (context, repository, child) {
-                  return _buildBody(context, repository.alerts);
-                },
-              ),
+            child: SafetyAlertListWidget(
+              onEdit: (alertDto) => _editAlert(context, alertDto),
+              onDelete: (alertDto) => _deleteAlert(context, alertDto),
             ),
           ),
-          
           if (_showTutorial) _buildTutorialOverlay(context),
           _buildOptOutButton(context),
           if (_showTip && context.watch<SafetyAlertRepository>().alerts.isEmpty)
-             _buildTipBubble(context),
+            _buildTipBubble(context),
         ],
       ),
     );
@@ -117,84 +138,6 @@ class _SafetyAlertListPageState extends State<SafetyAlertListPage>
         child: const Icon(Icons.add_alert),
       ),
     );
-  }
-
-  Widget _buildBody(BuildContext context, List<SafetyAlert> alerts) {
-    if (alerts.isEmpty) {
-      return const Center(
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Icon(Icons.shield_outlined, size: 72, color: Colors.grey),
-            SizedBox(height: 16),
-            Text(
-              'Nenhum alerta cadastrado ainda.',
-              textAlign: TextAlign.center,
-              style: TextStyle(fontSize: 16),
-            ),
-            SizedBox(height: 8),
-            Text(
-              'Use o botão "+" abaixo para reportar um alerta.',
-              textAlign: TextAlign.center,
-              style: TextStyle(color: Colors.grey),
-            ),
-          ],
-        ),
-      );
-    }
-
-    return ListView.separated(
-      itemCount: alerts.length,
-      separatorBuilder: (context, index) => const Divider(height: 1),
-      itemBuilder: (context, index) {
-        final alert = alerts[index];
-        return Dismissible(
-          key: Key(alert.id),
-          direction: DismissDirection.endToStart,
-          
-          onDismissed: (direction) {
-            context.read<SafetyAlertRepository>().deleteAlert(alert.id);
-            ScaffoldMessenger.of(context).showSnackBar(
-              const SnackBar(content: Text('Alerta excluído com sucesso.')),
-            );
-          },
-          
-          background: Container(
-            color: Colors.red,
-            alignment: Alignment.centerRight,
-            padding: const EdgeInsets.symmetric(horizontal: 20.0),
-            child: const Icon(Icons.delete, color: Colors.white),
-          ),
-          
-          child: ListTile(
-            leading: Icon(_getIconForAlertType(alert.type)),
-            title: Text(alert.description),
-            subtitle: Text(
-                'Tipo: ${alert.type.toString().split('.').last} - Severidade: ${alert.severity}'),
-            trailing: Text(
-              '${alert.timestamp.day}/${alert.timestamp.month}',
-              style: const TextStyle(fontSize: 12, color: Colors.grey),
-            ),
-            onTap: () {
-              _editAlert(context, alert);
-            },
-          ),
-        );
-      },
-    );
-  }
-
-  IconData _getIconForAlertType(AlertType type) {
-    switch (type) {
-      case AlertType.pothole:
-        return Icons.dangerous;
-      case AlertType.noLighting:
-        return Icons.lightbulb_outline;
-      case AlertType.suspiciousActivity:
-        return Icons.person_search;
-      case AlertType.other:
-        return Icons.help_outline;
-    }
   }
 
   Widget _buildTutorialOverlay(BuildContext context) {
@@ -212,7 +155,7 @@ class _SafetyAlertListPageState extends State<SafetyAlertListPage>
                 Text('Tutorial', style: Theme.of(context).textTheme.titleLarge),
                 const SizedBox(height: 12),
                 const Text(
-                  'Aqui você verá os alertas de segurança.\nUse o botão flutuante para reportar um novo alerta.',
+                  'Aqui você verá alertas de segurança com filtros por severidade, busca e paginação.\n\nUse o botão "+" para adicionar um novo alerta.\nClique em um alerta para editar.\nDeslize para a esquerda para deletar.',
                   textAlign: TextAlign.center,
                 ),
                 const SizedBox(height: 16),
@@ -249,7 +192,7 @@ class _SafetyAlertListPageState extends State<SafetyAlertListPage>
   Widget _buildTipBubble(BuildContext context) {
     return Positioned(
       right: 16,
-      bottom: MediaQuery.of(context).padding.bottom + 90, 
+      bottom: MediaQuery.of(context).padding.bottom + 90,
       child: AnimatedBuilder(
         animation: _fabController,
         builder: (context, child) {
@@ -267,7 +210,7 @@ class _SafetyAlertListPageState extends State<SafetyAlertListPage>
             boxShadow: const [BoxShadow(color: Colors.black26, blurRadius: 6)],
           ),
           child: Text(
-            'Toque aqui para reportar um alerta',
+            'Toque aqui para adicionar um alerta',
             style: Theme.of(context).textTheme.bodySmall?.copyWith(color: Colors.white),
           ),
         ),
@@ -275,4 +218,3 @@ class _SafetyAlertListPageState extends State<SafetyAlertListPage>
     );
   }
 }
-

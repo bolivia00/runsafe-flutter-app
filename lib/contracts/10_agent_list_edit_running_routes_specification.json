@@ -1,0 +1,142 @@
+{
+  "specification": "running_route_edit_dialog",
+  "version": "1.0",
+  "description": "Diálogo de edição para running routes com ícone lápis",
+  "entity": {
+    "name": "RunningRoute",
+    "properties": [
+      {
+        "name": "id",
+        "type": "String",
+        "editable": false,
+        "description": "Identificador único da rota"
+      },
+      {
+        "name": "name",
+        "type": "String",
+        "editable": true,
+        "required": true,
+        "constraint": "max 100 characters",
+        "description": "Nome da rota"
+      },
+      {
+        "name": "waypoints_count",
+        "type": "int",
+        "editable": false,
+        "description": "Número de waypoints da rota"
+      },
+      {
+        "name": "totalDistanceInKm",
+        "type": "double",
+        "editable": false,
+        "description": "Distância total calculada em km"
+      }
+    ]
+  },
+  "dialog_structure": {
+    "title": "Editar Rota",
+    "barrierDismissible": false,
+    "form_fields": [
+      {
+        "label": "Nome",
+        "field_name": "name",
+        "type": "TextField",
+        "required": true,
+        "max_length": 100,
+        "validation": "Campo obrigatório, máximo 100 caracteres",
+        "hint": "Digite o nome da rota"
+      },
+      {
+        "label": "Waypoints",
+        "field_name": "waypoints_count",
+        "type": "Text (read-only)",
+        "editable": false,
+        "display_format": "5 pontos"
+      },
+      {
+        "label": "Distância",
+        "field_name": "totalDistanceInKm",
+        "type": "Text (read-only)",
+        "editable": false,
+        "display_format": "0.05 km"
+      }
+    ]
+  },
+  "dialog_actions": {
+    "save_button": {
+      "label": "Salvar",
+      "action": "save",
+      "behavior": "Valida campos, persiste via DAO, exibe SnackBar, fecha diálogo",
+      "color": "Colors.blue"
+    },
+    "cancel_button": {
+      "label": "Cancelar",
+      "action": "cancel",
+      "behavior": "Fecha o diálogo sem salvar alterações",
+      "color": "Colors.grey"
+    }
+  },
+  "integration_points": {
+    "widget_file": "lib/widgets/running_route_list_item.dart (modificar)",
+    "edit_dialog_file": "lib/widgets/running_route_edit_dialog.dart (novo, opcional)",
+    "trigger": "trailing IconButton(icon: Icons.edit) em RunningRouteListItem",
+    "function_signature": "Future<void> showRunningRouteEditDialog(BuildContext context, RunningRouteDto route, Function(RunningRouteDto) onSave)",
+    "dao_integration": "Usar RunningRoutesLocalDaoSharedPrefs().upsertAll([updatedRoute])"
+  },
+  "data_flow": {
+    "step_1": "Usuário toca no ícone edit em RunningRouteListItem",
+    "step_2": "RunningRouteListWidget chama showRunningRouteEditDialog()",
+    "step_3": "Diálogo exibe formulário pré-preenchido com dados atuais",
+    "step_4": "Usuário edita nome e toca Salvar",
+    "step_5": "Validação local dos dados",
+    "step_6": "DAO persiste via upsertAll() dentro de try/catch",
+    "step_7": "Se sucesso: SnackBar 'Rota atualizada com sucesso', diálogo fecha",
+    "step_8": "Se erro: SnackBar com mensagem de erro, diálogo permanece aberto"
+  },
+  "error_handling": {
+    "validation_errors": [
+      "Nome vazio → 'Por favor, insira um nome para a rota'",
+      "Nome > 100 caracteres → 'Nome não pode exceder 100 caracteres'"
+    ],
+    "persistence_errors": [
+      "Erro ao salvar → 'Erro ao atualizar rota. Tente novamente.'"
+    ],
+    "user_feedback": "SnackBar com ação 'Fechar' ou 'Tentar novamente'"
+  },
+  "state_management": {
+    "approach": "Stateless dialog com callback para parent widget",
+    "parent_widget": "RunningRouteListWidget (Stateful)",
+    "reload_after_save": "Chamar _loadRoutes() para recarregar a listagem",
+    "local_state_in_dialog": "TextEditingController para campos editáveis"
+  },
+  "acceptance_criteria": [
+    "1. IconButton com icon: Icons.edit aparece como trailing em cada ListTile",
+    "2. Tap no ícone edit abre AlertDialog com título 'Editar Rota'",
+    "3. Diálogo é não-dismissable (apenas botões fecham)",
+    "4. Campo Nome vem pré-preenchido com valor atual",
+    "5. Campos Waypoints e Distância aparecem como read-only",
+    "6. Validação impede salvar com nome vazio",
+    "7. Botão Salvar persiste via DAO e exibe SnackBar",
+    "8. Botão Cancelar fecha diálogo sem salvar",
+    "9. Após salvar com sucesso, diálogo fecha e lista recarrega",
+    "10. Erros de persistência exibem SnackBar com descrição"
+  ],
+  "dependencies": {
+    "imports": [
+      "package:flutter/material.dart",
+      "package:runsafe/domain/dto/running_route_dto.dart",
+      "package:runsafe/services/running_routes_local_dao.dart"
+    ],
+    "existing_files": [
+      "lib/widgets/running_route_list_item.dart",
+      "lib/widgets/running_route_list_widget.dart",
+      "lib/services/running_routes_local_dao.dart"
+    ]
+  },
+  "example_code_structure": {
+    "dialog_function": "showRunningRouteEditDialog(BuildContext context, RunningRouteDto route, Function(RunningRouteDto) onSave)",
+    "form_validation": "validateRouteName(String name) → bool",
+    "persist_logic": "upsert via dao.upsertAll() with try/catch",
+    "snackbar_feedback": "ScaffoldMessenger.of(context).showSnackBar(...)"
+  }
+}

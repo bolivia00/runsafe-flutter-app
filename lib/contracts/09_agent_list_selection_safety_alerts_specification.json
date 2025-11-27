@@ -1,0 +1,150 @@
+{
+  "specification": "safety_alert_actions_dialog",
+  "version": "1.0",
+  "description": "Diálogo de ações para safety alerts com opções de Editar, Remover e Fechar",
+  "entity": {
+    "name": "SafetyAlert",
+    "properties": [
+      {
+        "name": "id",
+        "type": "String",
+        "description": "Identificador único do alerta"
+      },
+      {
+        "name": "description",
+        "type": "String",
+        "description": "Descrição do alerta de segurança"
+      },
+      {
+        "name": "type",
+        "type": "AlertType enum",
+        "values": ["pothole", "noLighting", "suspiciousActivity", "other"],
+        "description": "Tipo de alerta (buraco, falta iluminação, atividade suspeita, outro)"
+      },
+      {
+        "name": "severity",
+        "type": "int (1-5)",
+        "description": "Nível de severidade do alerta (1=Baixa até 5=Crítica)"
+      },
+      {
+        "name": "timestamp",
+        "type": "DateTime",
+        "description": "Data e hora em que o alerta foi criado"
+      }
+    ]
+  },
+  "severity_mapping": {
+    "1": {
+      "label": "Baixa",
+      "color": "Colors.green",
+      "description": "Situação segura, sem urgência"
+    },
+    "2": {
+      "label": "Moderada",
+      "color": "Colors.yellow",
+      "description": "Requer atenção moderada"
+    },
+    "3": {
+      "label": "Alta",
+      "color": "Colors.orange",
+      "description": "Requer atenção imediata"
+    },
+    "4": {
+      "label": "Muito Alta",
+      "color": "Colors.deepOrange",
+      "description": "Situação crítica"
+    },
+    "5": {
+      "label": "Crítica",
+      "color": "Colors.red",
+      "description": "Situação de risco extremo"
+    }
+  },
+  "alert_type_mapping": {
+    "pothole": {
+      "label": "Buraco",
+      "icon": "Icons.warning_rounded"
+    },
+    "noLighting": {
+      "label": "Falta de iluminação",
+      "icon": "Icons.dark_mode"
+    },
+    "suspiciousActivity": {
+      "label": "Atividade suspeita",
+      "icon": "Icons.security"
+    },
+    "other": {
+      "label": "Outro",
+      "icon": "Icons.info_outline"
+    }
+  },
+  "dialog_structure": {
+    "title": "String",
+    "example_title": "Alerta de Segurança",
+    "content": "Text with alert details",
+    "example_content": "Tipo: Buraco | Severidade: 5 (Crítica)\nDescrição: Buraco profundo na pista\nData: 27/11/2025 14:30",
+    "barrierDismissible": false,
+    "actions": [
+      {
+        "label": "Editar",
+        "action": "edit",
+        "behavior": "Chama callback onEdit(safetyAlertDto) e fecha o diálogo",
+        "color": "Colors.blue"
+      },
+      {
+        "label": "Remover",
+        "action": "delete",
+        "behavior": "Abre AlertDialog de confirmação; se confirmado, chama onDelete(safetyAlertDto), remove da DAO e atualiza listagem",
+        "color": "Colors.red"
+      },
+      {
+        "label": "Fechar",
+        "action": "close",
+        "behavior": "Fecha o diálogo sem executar nenhuma ação",
+        "color": "Colors.grey"
+      }
+    ]
+  },
+  "integration_points": {
+    "widget_file": "lib/widgets/safety_alert_actions_dialog.dart",
+    "dialog_class": "SafetyAlertActionsDialog",
+    "function_signature": "Future<void> showSafetyAlertActionsDialog(BuildContext context, SafetyAlertDto alert, {required VoidCallback onEdit, required VoidCallback onDelete})",
+    "usage_in_list_item": "GestureDetector(onLongPress: () => showSafetyAlertActionsDialog(...), child: ListTile(...))",
+    "dao_integration": "Usar SafetyAlertsLocalDaoSharedPrefs().upsertAll() ou clear() para remover"
+  },
+  "confirmation_dialog": {
+    "title": "Confirmar remoção",
+    "message": "Deseja remover o alerta de '{alertType}'? Esta ação não pode ser desfeita.",
+    "example_message": "Deseja remover o alerta de 'Buraco'? Esta ação não pode ser desfeita.",
+    "cancel_button": "Cancelar",
+    "confirm_button": "Remover",
+    "confirm_button_color": "Colors.red"
+  },
+  "state_management": {
+    "approach": "Stateless dialog + callbacks",
+    "parent_widget": "SafetyAlertListWidget (deve ser Stateful para atualizar após delete)",
+    "reload_after_delete": "Chamar setState() ou _loadAlerts() para recarregar a listagem",
+    "snackbar_feedback": "Opcional: exibir SnackBar confirmando a remoção com tipo do alerta"
+  },
+  "acceptance_criteria": [
+    "1. Long-press em SafetyAlertListItem exibe o diálogo com 3 ações",
+    "2. Editar: abre formulário/tela de edição e fecha o diálogo",
+    "3. Remover: abre AlertDialog de confirmação; ao confirmar, remove via DAO e recarrega lista",
+    "4. Fechar: fecha o diálogo sem ações",
+    "5. Diálogo é não-dismissable (apenas botões internos fecham)",
+    "6. Título exibe 'Alerta de Segurança'",
+    "7. Conteúdo exibe: tipo (com label), severidade (com cor e label), descrição e timestamp formatado"
+  ],
+  "dependencies": {
+    "imports": [
+      "package:flutter/material.dart",
+      "package:runsafe/domain/dto/safety_alert_dto.dart",
+      "package:runsafe/services/safety_alerts_local_dao.dart"
+    ],
+    "existing_files": [
+      "lib/widgets/safety_alert_list_item.dart",
+      "lib/widgets/safety_alert_list_widget.dart",
+      "lib/services/safety_alerts_local_dao.dart"
+    ]
+  }
+}

@@ -1,0 +1,201 @@
+{
+  "specification": "safety_alert_edit_dialog",
+  "version": "1.0",
+  "description": "Diálogo de edição para safety alerts com ícone lápis",
+  "entity": {
+    "name": "SafetyAlert",
+    "properties": [
+      {
+        "name": "id",
+        "type": "String",
+        "editable": false,
+        "description": "Identificador único do alerta"
+      },
+      {
+        "name": "type",
+        "type": "AlertType enum",
+        "editable": true,
+        "required": true,
+        "values": ["pothole", "noLighting", "suspiciousActivity", "other"],
+        "description": "Tipo de alerta"
+      },
+      {
+        "name": "severity",
+        "type": "int (1-5)",
+        "editable": true,
+        "required": true,
+        "constraint": "1 <= severity <= 5",
+        "description": "Nível de severidade do alerta"
+      },
+      {
+        "name": "description",
+        "type": "String",
+        "editable": true,
+        "required": true,
+        "constraint": "max 500 characters",
+        "description": "Descrição do alerta"
+      },
+      {
+        "name": "timestamp",
+        "type": "DateTime",
+        "editable": false,
+        "description": "Data e hora de criação"
+      }
+    ]
+  },
+  "alert_type_mapping": {
+    "pothole": {
+      "label": "Buraco",
+      "icon": "Icons.warning_rounded"
+    },
+    "noLighting": {
+      "label": "Falta de iluminação",
+      "icon": "Icons.dark_mode"
+    },
+    "suspiciousActivity": {
+      "label": "Atividade suspeita",
+      "icon": "Icons.security"
+    },
+    "other": {
+      "label": "Outro",
+      "icon": "Icons.info_outline"
+    }
+  },
+  "severity_mapping": {
+    "1": {"label": "Baixa", "color": "Colors.green"},
+    "2": {"label": "Moderada", "color": "Colors.yellow"},
+    "3": {"label": "Alta", "color": "Colors.orange"},
+    "4": {"label": "Muito Alta", "color": "Colors.deepOrange"},
+    "5": {"label": "Crítica", "color": "Colors.red"}
+  },
+  "dialog_structure": {
+    "title": "Editar Alerta de Segurança",
+    "barrierDismissible": false,
+    "form_fields": [
+      {
+        "label": "Tipo de Alerta",
+        "field_name": "type",
+        "type": "DropdownButton",
+        "required": true,
+        "options": [
+          {"value": "pothole", "label": "Buraco"},
+          {"value": "noLighting", "label": "Falta de iluminação"},
+          {"value": "suspiciousActivity", "label": "Atividade suspeita"},
+          {"value": "other", "label": "Outro"}
+        ],
+        "validation": "Campo obrigatório"
+      },
+      {
+        "label": "Severidade",
+        "field_name": "severity",
+        "type": "Slider ou Dropdown",
+        "required": true,
+        "min": 1,
+        "max": 5,
+        "divisions": 4,
+        "labels": ["Baixa", "Moderada", "Alta", "Muito Alta", "Crítica"],
+        "validation": "Deve estar entre 1 e 5"
+      },
+      {
+        "label": "Descrição",
+        "field_name": "description",
+        "type": "TextField (multiline)",
+        "required": true,
+        "max_length": 500,
+        "min_lines": 3,
+        "max_lines": 6,
+        "validation": "Campo obrigatório, máximo 500 caracteres",
+        "hint": "Descreva o alerta de segurança"
+      },
+      {
+        "label": "Data/Hora de Criação",
+        "field_name": "timestamp",
+        "type": "Text (read-only)",
+        "editable": false,
+        "display_format": "dd/mm/yyyy hh:mm:ss"
+      }
+    ]
+  },
+  "dialog_actions": {
+    "save_button": {
+      "label": "Salvar",
+      "action": "save",
+      "behavior": "Valida campos, persiste via DAO, exibe SnackBar, fecha diálogo",
+      "color": "Colors.blue"
+    },
+    "cancel_button": {
+      "label": "Cancelar",
+      "action": "cancel",
+      "behavior": "Fecha o diálogo sem salvar alterações",
+      "color": "Colors.grey"
+    }
+  },
+  "integration_points": {
+    "widget_file": "lib/widgets/safety_alert_list_item.dart (modificar)",
+    "edit_dialog_file": "lib/widgets/safety_alert_edit_dialog.dart (novo, opcional)",
+    "trigger": "trailing IconButton(icon: Icons.edit) em SafetyAlertListItem",
+    "function_signature": "Future<void> showSafetyAlertEditDialog(BuildContext context, SafetyAlertDto alert, Function(SafetyAlertDto) onSave)",
+    "dao_integration": "Usar SafetyAlertsLocalDaoSharedPrefs().upsertAll([updatedAlert])"
+  },
+  "data_flow": {
+    "step_1": "Usuário toca no ícone edit em SafetyAlertListItem",
+    "step_2": "SafetyAlertListWidget chama showSafetyAlertEditDialog()",
+    "step_3": "Diálogo exibe formulário pré-preenchido com dados atuais",
+    "step_4": "Usuário edita tipo, severidade e descrição",
+    "step_5": "Validação local dos dados",
+    "step_6": "DAO persiste via upsertAll() dentro de try/catch",
+    "step_7": "Se sucesso: SnackBar 'Alerta atualizado com sucesso', diálogo fecha",
+    "step_8": "Se erro: SnackBar com mensagem de erro, diálogo permanece aberto"
+  },
+  "error_handling": {
+    "validation_errors": [
+      "Tipo não selecionado → 'Por favor, selecione um tipo de alerta'",
+      "Severidade inválida → 'Severidade deve estar entre 1 e 5'",
+      "Descrição vazia → 'Por favor, insira uma descrição'",
+      "Descrição > 500 caracteres → 'Descrição não pode exceder 500 caracteres'"
+    ],
+    "persistence_errors": [
+      "Erro ao salvar → 'Erro ao atualizar alerta. Tente novamente.'"
+    ],
+    "user_feedback": "SnackBar com ação 'Fechar' ou 'Tentar novamente'"
+  },
+  "state_management": {
+    "approach": "Stateless dialog com callback para parent widget",
+    "parent_widget": "SafetyAlertListWidget (Stateful)",
+    "reload_after_save": "Chamar _loadAlerts() para recarregar a listagem",
+    "local_state_in_dialog": "TextEditingController para descrição, selectedType, selectedSeverity"
+  },
+  "acceptance_criteria": [
+    "1. IconButton com icon: Icons.edit aparece como trailing em cada ListTile",
+    "2. Tap no ícone edit abre AlertDialog com título 'Editar Alerta de Segurança'",
+    "3. Diálogo é não-dismissable (apenas botões fecham)",
+    "4. Campo Tipo vem pré-selecionado com valor atual",
+    "5. Campo Severidade vem pré-preenchido com valor atual",
+    "6. Campo Descrição vem pré-preenchido com texto atual",
+    "7. Campo Timestamp aparece como read-only",
+    "8. Validação impede salvar com campos obrigatórios vazios",
+    "9. Validação impede salvar com severidade fora do range 1-5",
+    "10. Botão Salvar persiste via DAO e exibe SnackBar",
+    "11. Botão Cancelar fecha diálogo sem salvar",
+    "12. Após salvar com sucesso, diálogo fecha e lista recarrega",
+    "13. Erros de persistência exibem SnackBar com descrição"
+  ],
+  "dependencies": {
+    "imports": [
+      "package:flutter/material.dart",
+      "package:runsafe/domain/dto/safety_alert_dto.dart",
+      "package:runsafe/services/safety_alerts_local_dao.dart"
+    ],
+    "existing_files": [
+      "lib/widgets/safety_alert_list_item.dart",
+      "lib/widgets/safety_alert_list_widget.dart",
+      "lib/services/safety_alerts_local_dao.dart"
+    ]
+  },
+  "example_code_structure": {
+    "dialog_function": "showSafetyAlertEditDialog(BuildContext context, SafetyAlertDto alert, Function(SafetyAlertDto) onSave)",
+    "form_validation": "validateSafetyAlert(SafetyAlertDto alert) → List<String> errors",
+    "persist_logic": "upsert via dao.upsertAll() with try/catch",
+    "snackbar_feedback": "ScaffoldMessenger.of(context).showSnackBar(...)"
+  }
+}

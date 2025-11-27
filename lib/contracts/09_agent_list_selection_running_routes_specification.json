@@ -1,0 +1,99 @@
+{
+  "specification": "running_route_actions_dialog",
+  "version": "1.0",
+  "description": "Diálogo de ações para running routes com opções de Editar, Remover e Fechar",
+  "entity": {
+    "name": "RunningRoute",
+    "properties": [
+      {
+        "name": "id",
+        "type": "String",
+        "description": "Identificador único da rota"
+      },
+      {
+        "name": "name",
+        "type": "String",
+        "description": "Nome da rota"
+      },
+      {
+        "name": "waypoints_count",
+        "type": "int",
+        "description": "Número de waypoints da rota"
+      },
+      {
+        "name": "totalDistanceInKm",
+        "type": "double",
+        "description": "Distância total calculada em km"
+      }
+    ]
+  },
+  "dialog_structure": {
+    "title": "String (Nome da rota + contador de waypoints)",
+    "example_title": "Rota A (5 pontos)",
+    "content": "Text describing route details",
+    "example_content": "Distância: 0.05 km | Waypoints: 5",
+    "barrierDismissible": false,
+    "actions": [
+      {
+        "label": "Editar",
+        "action": "edit",
+        "behavior": "Chama callback onEdit(runningRouteDto) e fecha o diálogo",
+        "color": "Colors.blue"
+      },
+      {
+        "label": "Remover",
+        "action": "delete",
+        "behavior": "Abre AlertDialog de confirmação; se confirmado, chama onDelete(runningRouteDto), remove da DAO e atualiza listagem",
+        "color": "Colors.red"
+      },
+      {
+        "label": "Fechar",
+        "action": "close",
+        "behavior": "Fecha o diálogo sem executar nenhuma ação",
+        "color": "Colors.grey"
+      }
+    ]
+  },
+  "integration_points": {
+    "widget_file": "lib/widgets/running_route_actions_dialog.dart",
+    "dialog_class": "RunningRouteActionsDialog",
+    "function_signature": "Future<void> showRunningRouteActionsDialog(BuildContext context, RunningRouteDto route, {required VoidCallback onEdit, required VoidCallback onDelete})",
+    "usage_in_list_item": "GestureDetector(onLongPress: () => showRunningRouteActionsDialog(...), child: ListTile(...))",
+    "dao_integration": "Usar RunningRoutesLocalDaoSharedPrefs().upsertAll() ou clear() para remover"
+  },
+  "confirmation_dialog": {
+    "title": "Confirmar remoção",
+    "message": "Deseja remover a rota '{routeName}'? Esta ação não pode ser desfeita.",
+    "example_message": "Deseja remover a rota 'Rota A'? Esta ação não pode ser desfeita.",
+    "cancel_button": "Cancelar",
+    "confirm_button": "Remover",
+    "confirm_button_color": "Colors.red"
+  },
+  "state_management": {
+    "approach": "Stateless dialog + callbacks",
+    "parent_widget": "RunningRouteListWidget (deve ser Stateful para atualizar após delete)",
+    "reload_after_delete": "Chamar setState() ou _loadGoals() para recarregar a listagem",
+    "snackbar_feedback": "Opcional: exibir SnackBar confirmando a remoção"
+  },
+  "acceptance_criteria": [
+    "1. Long-press em RunningRouteListItem exibe o diálogo com 3 ações",
+    "2. Editar: abre formulário/tela de edição e fecha o diálogo",
+    "3. Remover: abre AlertDialog de confirmação; ao confirmar, remove via DAO e recarrega lista",
+    "4. Fechar: fecha o diálogo sem ações",
+    "5. Diálogo é não-dismissable (apenas botões internos fecham)",
+    "6. Título exibe nome da rota + número de waypoints",
+    "7. Conteúdo exibe distância total e contador de waypoints"
+  ],
+  "dependencies": {
+    "imports": [
+      "package:flutter/material.dart",
+      "package:runsafe/domain/dto/running_route_dto.dart",
+      "package:runsafe/services/running_routes_local_dao.dart"
+    ],
+    "existing_files": [
+      "lib/widgets/running_route_list_item.dart",
+      "lib/widgets/running_route_list_widget.dart",
+      "lib/services/running_routes_local_dao.dart"
+    ]
+  }
+}

@@ -1,0 +1,197 @@
+{
+  "specification": "weekly_goal_edit_dialog",
+  "version": "1.0",
+  "description": "Diálogo de edição para weekly goals com ícone lápis",
+  "entity": {
+    "name": "WeeklyGoal",
+    "properties": [
+      {
+        "name": "id",
+        "type": "String",
+        "editable": false,
+        "description": "Identificador único da meta (UUID)"
+      },
+      {
+        "name": "targetKm",
+        "type": "double",
+        "editable": true,
+        "required": true,
+        "constraint": "targetKm > 0",
+        "precision": 2,
+        "max_value": 999.99,
+        "description": "Distância alvo em quilômetros"
+      },
+      {
+        "name": "currentKm",
+        "type": "double",
+        "editable": true,
+        "required": true,
+        "constraint": "0 <= currentKm <= targetKm",
+        "precision": 2,
+        "description": "Distância percorrida atualmente em quilômetros"
+      },
+      {
+        "name": "progressPercentage",
+        "type": "double",
+        "computed": true,
+        "editable": false,
+        "formula": "(currentKm / targetKm) * 100, clamped 0-100",
+        "precision": 1,
+        "description": "Percentual de progresso (calculado)"
+      }
+    ],
+    "invariants": [
+      "targetKm deve ser maior que zero",
+      "currentKm não pode ser negativo",
+      "currentKm não pode ser maior que targetKm",
+      "progressPercentage é derivado"
+    ]
+  },
+  "dialog_structure": {
+    "title": "Editar Meta Semanal",
+    "barrierDismissible": false,
+    "form_fields": [
+      {
+        "label": "Distância Alvo (km)",
+        "field_name": "targetKm",
+        "type": "TextField (numeric)",
+        "required": true,
+        "input_type": "TextInputType.numberWithOptions(decimal: true)",
+        "range": "> 0 a 999.99",
+        "precision": "2 casas decimais",
+        "example_value": "50.00",
+        "validation": "Campo obrigatório, deve ser um número maior que zero, máximo 999.99 km"
+      },
+      {
+        "label": "Progresso Atual (km)",
+        "field_name": "currentKm",
+        "type": "TextField (numeric)",
+        "required": true,
+        "input_type": "TextInputType.numberWithOptions(decimal: true)",
+        "range": "0 a [targetKm]",
+        "precision": "2 casas decimais",
+        "example_value": "37.50",
+        "validation": "Campo obrigatório, deve estar entre 0 e a distância alvo"
+      },
+      {
+        "label": "Progresso",
+        "field_name": "progressPercentage",
+        "type": "LinearProgressIndicator + Text",
+        "editable": false,
+        "display_format": "X.X%",
+        "example_display": "75.0%",
+        "auto_calculate": true
+      }
+    ]
+  },
+  "dialog_actions": {
+    "save_button": {
+      "label": "Salvar",
+      "action": "save",
+      "behavior": "Valida campos, persiste via DAO, exibe SnackBar, fecha diálogo",
+      "color": "Colors.blue"
+    },
+    "cancel_button": {
+      "label": "Cancelar",
+      "action": "cancel",
+      "behavior": "Fecha o diálogo sem salvar alterações",
+      "color": "Colors.grey"
+    }
+  },
+  "integration_points": {
+    "widget_file": "lib/widgets/weekly_goal_list_item.dart (modificar)",
+    "edit_dialog_file": "lib/widgets/weekly_goal_edit_dialog.dart (novo, opcional)",
+    "trigger": "trailing IconButton(icon: Icons.edit) em WeeklyGoalListItem",
+    "function_signature": "Future<void> showWeeklyGoalEditDialog(BuildContext context, WeeklyGoalDto goal, Function(WeeklyGoalDto) onSave)",
+    "dao_integration": "Usar WeeklyGoalsLocalDaoSharedPrefs().upsertAll([updatedGoal])"
+  },
+  "data_flow": {
+    "step_1": "Usuário toca no ícone edit em WeeklyGoalListItem",
+    "step_2": "WeeklyGoalListWidget chama showWeeklyGoalEditDialog()",
+    "step_3": "Diálogo exibe formulário pré-preenchido com valores atuais",
+    "step_4": "Usuário edita target_km e/ou current_progress_km",
+    "step_5": "Progresso (%) é recalculado em tempo real enquanto digita",
+    "step_6": "Validação local dos valores",
+    "step_7": "DAO persiste via upsertAll() dentro de try/catch",
+    "step_8": "Se sucesso: SnackBar 'Meta atualizada com sucesso', diálogo fecha",
+    "step_9": "Se erro: SnackBar com mensagem de erro, diálogo permanece aberto"
+  },
+  "error_handling": {
+    "validation_errors": [
+      "Distância alvo vazia → 'Por favor, insira a distância alvo'",
+      "Distância alvo inválida → 'Distância alvo deve ser um número válido'",
+      "Distância alvo <= 0 → 'Distância alvo deve ser maior que zero'",
+      "Distância alvo > 999.99 → 'Distância alvo máxima é 999.99 km'",
+      "Progresso vazio → 'Por favor, insira o progresso atual'",
+      "Progresso inválido → 'Progresso deve ser um número válido'",
+      "Progresso negativo → 'Progresso não pode ser negativo'",
+      "Progresso > alvo → 'Progresso não pode ser maior que a distância alvo'"
+    ],
+    "persistence_errors": [
+      "Erro ao salvar → 'Erro ao atualizar meta. Tente novamente.'"
+    ],
+    "user_feedback": "SnackBar com ação 'Fechar' ou 'Tentar novamente'"
+  },
+  "state_management": {
+    "approach": "Stateless dialog com callback para parent widget",
+    "parent_widget": "WeeklyGoalListWidget (Stateful)",
+    "reload_after_save": "Chamar _loadGoals() para recarregar a listagem",
+    "local_state_in_dialog": "TextEditingController para targetKm, TextEditingController para currentKm",
+    "real_time_calculation": "Atualizar progressPercentage ao digitar no campo currentKm"
+  },
+  "progress_visualization": {
+    "type": "LinearProgressIndicator + Text",
+    "value_range": "0.0 a 1.0",
+    "display_format": "X.X%",
+    "color_mapping": {
+      "0-33": "Colors.red",
+      "34-66": "Colors.orange",
+      "67-99": "Colors.yellow",
+      "100": "Colors.green"
+    },
+    "auto_update": true
+  },
+  "acceptance_criteria": [
+    "1. IconButton com icon: Icons.edit aparece como trailing em cada ListTile",
+    "2. Tap no ícone edit abre AlertDialog com título 'Editar Meta Semanal'",
+    "3. Diálogo é não-dismissable (apenas botões fecham)",
+    "4. Campo Distância Alvo vem pré-preenchido com valor atual (2 casas decimais)",
+    "5. Campo Progresso Atual vem pré-preenchido com valor atual (2 casas decimais)",
+    "6. Progresso (%) exibe LinearProgressIndicator atualizado em tempo real",
+    "7. Validação impede salvar com campos vazios",
+    "8. Validação impede salvar com valores não-numéricos",
+    "9. Validação impede salvar com distância alvo <= 0",
+    "10. Validação impede salvar com progresso negativo",
+    "11. Validação impede salvar com progresso > distância alvo",
+    "12. Botão Salvar persiste via DAO e exibe SnackBar",
+    "13. Botão Cancelar fecha diálogo sem salvar",
+    "14. Após salvar com sucesso, diálogo fecha e lista recarrega",
+    "15. Erros de persistência exibem SnackBar com descrição"
+  ],
+  "dependencies": {
+    "imports": [
+      "package:flutter/material.dart",
+      "package:runsafe/domain/dto/weekly_goal_dto.dart",
+      "package:runsafe/services/weekly_goals_local_dao.dart"
+    ],
+    "existing_files": [
+      "lib/widgets/weekly_goal_list_item.dart",
+      "lib/widgets/weekly_goal_list_widget.dart",
+      "lib/services/weekly_goals_local_dao.dart"
+    ]
+  },
+  "example_code_structure": {
+    "dialog_function": "showWeeklyGoalEditDialog(BuildContext context, WeeklyGoalDto goal, Function(WeeklyGoalDto) onSave)",
+    "form_validation": "validateWeeklyGoal(double targetKm, double currentKm) → Map<String, String> errors",
+    "progress_calculation": "calculateProgress(double current, double target) → double",
+    "persist_logic": "upsert via dao.upsertAll() with try/catch",
+    "snackbar_feedback": "ScaffoldMessenger.of(context).showSnackBar(...)"
+  },
+  "input_formatting": {
+    "decimal_separator": ".",
+    "negative_sign": "-",
+    "pattern_km": "^\\d{1,3}(\\.\\d{1,2})?$",
+    "max_integer_digits": 3,
+    "max_decimal_digits": 2
+  }
+}

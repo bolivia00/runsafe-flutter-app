@@ -1,0 +1,112 @@
+{
+  "specification": "waypoint_actions_dialog",
+  "version": "1.0",
+  "description": "Diálogo de ações para waypoints com opções de Editar, Remover e Fechar",
+  "entity": {
+    "name": "Waypoint",
+    "properties": [
+      {
+        "name": "latitude",
+        "type": "double",
+        "range": "-90.0 a 90.0",
+        "description": "Coordenada de latitude do waypoint"
+      },
+      {
+        "name": "longitude",
+        "type": "double",
+        "range": "-180.0 a 180.0",
+        "description": "Coordenada de longitude do waypoint"
+      },
+      {
+        "name": "timestamp",
+        "type": "DateTime",
+        "description": "Data e hora em que o waypoint foi criado"
+      }
+    ],
+    "invariants": [
+      "Latitude deve estar entre -90 e 90",
+      "Longitude deve estar entre -180 e 180",
+      "Timestamp deve ser válido"
+    ]
+  },
+  "coordinate_display": {
+    "precision": "6 casas decimais",
+    "font": "Monospace (para melhor alinhamento)",
+    "example_latitude": "-16.502301",
+    "example_longitude": "-68.119301"
+  },
+  "dialog_structure": {
+    "title": "String",
+    "example_title": "Waypoint",
+    "content": "Text with waypoint coordinates and timestamp",
+    "example_content": "Lat: -16.502301\nLon: -68.119301\nCriado: 27/11/2025 14:30:45",
+    "barrierDismissible": false,
+    "actions": [
+      {
+        "label": "Editar",
+        "action": "edit",
+        "behavior": "Chama callback onEdit(waypointDto) e fecha o diálogo",
+        "color": "Colors.blue"
+      },
+      {
+        "label": "Remover",
+        "action": "delete",
+        "behavior": "Abre AlertDialog de confirmação; se confirmado, chama onDelete(waypointDto), remove da DAO e atualiza listagem",
+        "color": "Colors.red"
+      },
+      {
+        "label": "Fechar",
+        "action": "close",
+        "behavior": "Fecha o diálogo sem executar nenhuma ação",
+        "color": "Colors.grey"
+      }
+    ]
+  },
+  "integration_points": {
+    "widget_file": "lib/widgets/waypoint_actions_dialog.dart",
+    "dialog_class": "WaypointActionsDialog",
+    "function_signature": "Future<void> showWaypointActionsDialog(BuildContext context, WaypointDto waypoint, {required VoidCallback onEdit, required VoidCallback onDelete})",
+    "usage_in_list_item": "GestureDetector(onLongPress: () => showWaypointActionsDialog(...), child: ListTile(...))",
+    "dao_integration": "Usar WaypointsLocalDaoSharedPrefs().upsertAll() ou clear() para remover"
+  },
+  "confirmation_dialog": {
+    "title": "Confirmar remoção",
+    "message": "Deseja remover o waypoint em '{coordinates}'? Esta ação não pode ser desfeita.",
+    "example_message": "Deseja remover o waypoint em '-16.502301, -68.119301'? Esta ação não pode ser desfeita.",
+    "cancel_button": "Cancelar",
+    "confirm_button": "Remover",
+    "confirm_button_color": "Colors.red"
+  },
+  "timestamp_formatting": {
+    "format": "dd/mm/yyyy hh:mm:ss",
+    "example": "27/11/2025 14:30:45",
+    "locale": "pt_BR"
+  },
+  "state_management": {
+    "approach": "Stateless dialog + callbacks",
+    "parent_widget": "WaypointListWidget (deve ser Stateful para atualizar após delete)",
+    "reload_after_delete": "Chamar setState() ou _loadWaypoints() para recarregar a listagem",
+    "snackbar_feedback": "Opcional: exibir SnackBar confirmando a remoção com coordenadas do waypoint"
+  },
+  "acceptance_criteria": [
+    "1. Long-press em WaypointListItem exibe o diálogo com 3 ações",
+    "2. Editar: abre formulário/tela de edição e fecha o diálogo",
+    "3. Remover: abre AlertDialog de confirmação; ao confirmar, remove via DAO e recarrega lista",
+    "4. Fechar: fecha o diálogo sem ações",
+    "5. Diálogo é não-dismissable (apenas botões internos fecham)",
+    "6. Título exibe 'Waypoint'",
+    "7. Conteúdo exibe: latitude (6 casas decimais), longitude (6 casas decimais), timestamp formatado (dd/mm/yyyy hh:mm:ss)"
+  ],
+  "dependencies": {
+    "imports": [
+      "package:flutter/material.dart",
+      "package:runsafe/domain/dto/waypoint_dto.dart",
+      "package:runsafe/services/waypoints_local_dao.dart"
+    ],
+    "existing_files": [
+      "lib/widgets/waypoint_list_item.dart",
+      "lib/widgets/waypoint_list_widget.dart",
+      "lib/services/waypoints_local_dao.dart"
+    ]
+  }
+}
