@@ -49,6 +49,7 @@ class _WaypointListPageWithPaginationState
   }
 
   void _addWaypoint(BuildContext context) async {
+    final repository = context.read<WaypointRepository>();
     final latController = TextEditingController();
     final lonController = TextEditingController();
 
@@ -113,8 +114,7 @@ class _WaypointListPageWithPaginationState
       ),
     );
 
-    if (result != null) {
-      final repository = context.read<WaypointRepository>();
+    if (result != null && mounted) {
       repository.addWaypoint(result);
 
       if (_showTip) {

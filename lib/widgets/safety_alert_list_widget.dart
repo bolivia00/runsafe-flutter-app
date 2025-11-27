@@ -200,7 +200,7 @@ class _SafetyAlertListWidgetState extends State<SafetyAlertListWidget> {
                       FilterChip(
                         label: Text(_getSeverityLabel(i)),
                         selected: _selectedSeverity == i,
-                        backgroundColor: _getSeverityColor(i).withOpacity(0.2),
+                        backgroundColor: _getSeverityColor(i).withValues(alpha: 0.2),
                         selectedColor: _getSeverityColor(i),
                         labelStyle: TextStyle(
                           color: _selectedSeverity == i ? Colors.white : Colors.black,
@@ -306,13 +306,13 @@ class _SafetyAlertListWidgetState extends State<SafetyAlertListWidget> {
     }
 
     if (_currentListing.data.isEmpty) {
-      return Center(
+      return const Center(
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
-            const Icon(Icons.security_outlined, size: 48, color: Colors.grey),
-            const SizedBox(height: 12),
-            const Text('Nenhum alerta encontrado.'),
+            Icon(Icons.security_outlined, size: 48, color: Colors.grey),
+            SizedBox(height: 12),
+            Text('Nenhum alerta encontrado.'),
           ],
         ),
       );

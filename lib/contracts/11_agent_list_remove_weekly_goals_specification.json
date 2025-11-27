@@ -1,0 +1,208 @@
+{
+  "specification": "weekly_goal_swipe_remove",
+  "version": "1.0",
+  "description": "Remoção por swipe (Dismissible) para weekly goals",
+  "entity": {
+    "name": "WeeklyGoal",
+    "properties": [
+      {
+        "name": "id",
+        "type": "String",
+        "description": "Identificador único da meta (UUID)"
+      },
+      {
+        "name": "targetKm",
+        "type": "double",
+        "constraint": "> 0",
+        "precision": 2,
+        "description": "Distância alvo em quilômetros"
+      },
+      {
+        "name": "currentKm",
+        "type": "double",
+        "constraint": ">= 0",
+        "precision": 2,
+        "description": "Distância percorrida atualmente"
+      },
+      {
+        "name": "progressPercentage",
+        "type": "double",
+        "computed": true,
+        "precision": 1,
+        "description": "Percentual de progresso (calculado)"
+      }
+    ]
+  },
+  "dismissible_structure": {
+    "key": "ValueKey(goal.id)",
+    "direction": "DismissDirection.endToStart",
+    "description": "Swipe da direita para esquerda"
+  },
+  "background_design": {
+    "direction": "right-to-left",
+    "color": "Colors.red",
+    "icon": "Icons.delete",
+    "alignment": "Alignment.centerRight",
+    "padding": "EdgeInsets.only(right: 16)"
+  },
+  "confirmation_dialog": {
+    "dismissible": false,
+    "title": "Confirmar remoção",
+    "message": "Remover meta de '{targetKm}' km? Esta ação não pode ser desfeita.",
+    "message_format": "distância com 2 casas decimais",
+    "example_message": "Remover meta de '50.00' km? Esta ação não pode ser desfeita.",
+    "actions": [
+      {
+        "label": "Cancelar",
+        "return_value": false,
+        "color": "Colors.grey"
+      },
+      {
+        "label": "Remover",
+        "return_value": true,
+        "color": "Colors.red"
+      }
+    ]
+  },
+  "distance_formatting": {
+    "precision": "2 casas decimais",
+    "suffix": " km",
+    "example": "50.00 km",
+    "format_pattern": "X.XX"
+  },
+  "behavior_flow": {
+    "step_1": "Usuário faz swipe para esquerda em WeeklyGoalListItem",
+    "step_2": "Background vermelho com ícone trash aparece com animação",
+    "step_3": "Usuário libera o gesto ou toca no background",
+    "step_4": "confirmDismiss é acionado",
+    "step_5": "AlertDialog de confirmação abre (não-dismissable)",
+    "step_6": "Usuário confirma ou cancela",
+    "step_7a_confirm": "DAO remove a meta (try/catch)",
+    "step_7b_success": "onDismissed é chamado, item desaparece com animação",
+    "step_7c_snackbar": "SnackBar exibe 'Meta removida com sucesso'",
+    "step_8_error": "Se erro: confirmDismiss retorna false, swipe reverte, SnackBar de erro"
+  },
+  "dao_integration": {
+    "class": "WeeklyGoalsLocalDaoSharedPrefs",
+    "method": "remove(String id) ou equivalente que remove a meta",
+    "wrapped_in": "try/catch com feedback ao usuário"
+  },
+  "feedback_messages": {
+    "success": {
+      "type": "SnackBar",
+      "message": "Meta removida com sucesso",
+      "duration": "2 segundos"
+    },
+    "error": {
+      "type": "SnackBar",
+      "message": "Erro ao remover meta",
+      "duration": "3 segundos"
+    }
+  },
+  "confirmDismiss_implementation": {
+    "signature": "Future<bool?> confirmDismiss(DismissDirection direction)",
+    "logic": [
+      "1. Validar direction == DismissDirection.endToStart",
+      "2. Formatar targetKm (2 casas decimais)",
+      "3. Abrir showDialog com AlertDialog (barrierDismissible: false)",
+      "4. Se usuário confirma: chamar DAO.remove(id) em try/catch",
+      "5. Se sucesso: retornar true (executa onDismissed)",
+      "6. Se erro: exibir SnackBar, retornar false (reverte swipe)",
+      "7. Se usuário cancela: retornar false"
+    ]
+  },
+  "onDismissed_implementation": {
+    "signature": "void onDismissed(DismissDirection direction)",
+    "logic": [
+      "1. Atualizar estado da lista parent (setState ou notifyListeners)",
+      "2. Exibir SnackBar de sucesso",
+      "3. Opcionalmente: recarregar lista via _loadGoals() se necessário"
+    ]
+  },
+  "acceptance_criteria": [
+    "1. Swipe para esquerda exibe background vermelho com ícone trash",
+    "2. Background aparece apenas ao swipear (não aparece por default)",
+    "3. Ao completar ou tocar no background, abre AlertDialog",
+    "4. AlertDialog é não-dismissable (apenas botões fecham)",
+    "5. AlertDialog exibe título e mensagem com targetKm (2 casas decimais)",
+    "6. Distância é formatada corretamente: 'X.XX km'",
+    "7. Botão 'Cancelar' reverte o swipe sem remover",
+    "8. Botão 'Remover' chama DAO.remove() e remove item",
+    "9. Se sucesso: SnackBar 'Meta removida com sucesso'",
+    "10. Se erro: SnackBar 'Erro ao remover meta', swipe reverte",
+    "11. Item desaparece com animação suave",
+    "12. Lista recarrega ou atualiza estado após remoção",
+    "13. Nenhuma lógica de edição/seleção é acionada",
+    "14. Progresso percentual não é exibido no diálogo (apenas targetKm)"
+  ],
+  "dependencies": {
+    "imports": [
+      "package:flutter/material.dart",
+      "package:runsafe/domain/dto/weekly_goal_dto.dart",
+      "package:runsafe/services/weekly_goals_local_dao.dart"
+    ],
+    "existing_files": [
+      "lib/widgets/weekly_goal_list_item.dart",
+      "lib/widgets/weekly_goal_list_widget.dart",
+      "lib/services/weekly_goals_local_dao.dart"
+    ]
+  },
+  "modification_points": {
+    "file": "lib/widgets/weekly_goal_list_item.dart",
+    "changes": [
+      "Envolver ListTile em Dismissible widget",
+      "Implementar confirmDismiss Future",
+      "Implementar onDismissed callback",
+      "Adicionar background com Container vermelho",
+      "Formatar targetKm com 2 casas decimais"
+    ]
+  },
+  "error_scenarios": [
+    {
+      "scenario": "DAO falha ao remover",
+      "handling": "try/catch captura erro, retorna false em confirmDismiss, exibe SnackBar de erro"
+    },
+    {
+      "scenario": "Usuário cancela confirmação",
+      "handling": "Retorna false, swipe reverte suavemente"
+    },
+    {
+      "scenario": "Meta não encontrada",
+      "handling": "DAO retorna erro, tratado como acima"
+    }
+  ],
+  "animation_details": {
+    "dismissible_animation": "default (suave)",
+    "background_animation": "slide and fade in",
+    "item_removal_animation": "default Flutter (suave saída)"
+  },
+  "distance_display_in_dialog": {
+    "format": "X.XX km",
+    "precision": "2 casas decimais",
+    "example": "50.00 km"
+  },
+  "testing_checklist": [
+    "[ ] Swipe para esquerda exibe background",
+    "[ ] Swipe para direita reverte",
+    "[ ] Tap no background abre diálogo",
+    "[ ] Diálogo é não-dismissable",
+    "[ ] Distância formatada com 2 casas decimais",
+    "[ ] Distância com sufixo 'km'",
+    "[ ] Cancelar reverte swipe",
+    "[ ] Remover chama DAO",
+    "[ ] SnackBar de sucesso exibe",
+    "[ ] SnackBar de erro exibe se falha",
+    "[ ] Item desaparece com animação",
+    "[ ] Lista permanece consistente",
+    "[ ] Sem regredir edição/seleção"
+  ],
+  "ui_example": {
+    "normal_state": "ListTile com meta semanal",
+    "swiped_state": "Background vermelho com ícone trash visível",
+    "dialog_state": {
+      "title": "Confirmar remoção",
+      "body": "Remover meta de '50.00' km? Esta ação não pode ser desfeita.",
+      "buttons": ["Cancelar", "Remover"]
+    }
+  }
+}

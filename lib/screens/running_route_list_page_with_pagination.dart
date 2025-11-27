@@ -71,34 +71,32 @@ class _RunningRouteListPageWithPaginationState
   }
 
   void _editRoute(BuildContext context, RunningRouteDto routeDto) async {
-    try {
-      // Converter DTO para Entity
-      final routeEntity = _mapper.toEntity(routeDto);
+    final repository = context.read<RunningRouteRepository>();
+    
+    // Converter DTO para Entity
+    final routeEntity = _mapper.toEntity(routeDto);
 
-      final repository = context.read<RunningRouteRepository>();
-      final updatedRoute = await showRunningRouteFormDialog(
-        context,
-        initial: routeEntity,
-      );
+    final updatedRoute = await showRunningRouteFormDialog(
+      context,
+      initial: routeEntity,
+    );
 
-      if (updatedRoute != null) {
-        repository.editRoute(updatedRoute);
-      }
-    } catch (e) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Erro ao editar rota: $e')),
-      );
+    if (updatedRoute != null) {
+      repository.editRoute(updatedRoute);
     }
   }
 
   void _deleteRoute(BuildContext context, RunningRouteDto routeDto) async {
+    if (!mounted) return;
     try {
       final repository = context.read<RunningRouteRepository>();
       repository.deleteRoute(routeDto.route_id);
     } catch (e) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Erro ao deletar rota: $e')),
-      );
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Erro ao deletar rota: $e')),
+        );
+      }
     }
   }
 

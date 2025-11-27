@@ -37,7 +37,7 @@ class WaypointListItem extends StatelessWidget {
           height: 40,
           decoration: BoxDecoration(
             shape: BoxShape.circle,
-            color: Colors.blue.withOpacity(0.2),
+            color: Colors.blue.withValues(alpha: 0.2),
           ),
           child: const Center(
             child: Icon(Icons.location_on, color: Colors.blue, size: 20),

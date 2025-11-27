@@ -238,13 +238,13 @@ class _RunningRouteListWidgetState extends State<RunningRouteListWidget> {
     }
 
     if (_currentListing.data.isEmpty) {
-      return Center(
+      return const Center(
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
-            const Icon(Icons.route_outlined, size: 48, color: Colors.grey),
-            const SizedBox(height: 12),
-            const Text('Nenhuma rota encontrada.'),
+            Icon(Icons.route_outlined, size: 48, color: Colors.grey),
+            SizedBox(height: 12),
+            Text('Nenhuma rota encontrada.'),
           ],
         ),
       );

@@ -1,0 +1,170 @@
+{
+  "specification": "running_route_swipe_remove",
+  "version": "1.0",
+  "description": "Remoção por swipe (Dismissible) para running routes",
+  "entity": {
+    "name": "RunningRoute",
+    "properties": [
+      {
+        "name": "id",
+        "type": "String",
+        "description": "Identificador único da rota"
+      },
+      {
+        "name": "name",
+        "type": "String",
+        "description": "Nome da rota para exibição"
+      },
+      {
+        "name": "waypoints_count",
+        "type": "int",
+        "description": "Número de waypoints"
+      }
+    ]
+  },
+  "dismissible_structure": {
+    "key": "ValueKey(route.id)",
+    "direction": "DismissDirection.endToStart",
+    "description": "Swipe da direita para esquerda"
+  },
+  "background_design": {
+    "direction": "right-to-left",
+    "color": "Colors.red",
+    "icon": "Icons.delete",
+    "alignment": "Alignment.centerRight",
+    "padding": "EdgeInsets.only(right: 16)"
+  },
+  "confirmation_dialog": {
+    "dismissible": false,
+    "title": "Confirmar remoção",
+    "message": "Remover rota '{routeName}'? Esta ação não pode ser desfeita.",
+    "example_message": "Remover rota 'Rota A'? Esta ação não pode ser desfeita.",
+    "actions": [
+      {
+        "label": "Cancelar",
+        "return_value": false,
+        "color": "Colors.grey"
+      },
+      {
+        "label": "Remover",
+        "return_value": true,
+        "color": "Colors.red"
+      }
+    ]
+  },
+  "behavior_flow": {
+    "step_1": "Usuário faz swipe para esquerda em RunningRouteListItem",
+    "step_2": "Background vermelho com ícone trash aparece com animação",
+    "step_3": "Usuário libera o gesto ou toca no background",
+    "step_4": "confirmDismiss é acionado",
+    "step_5": "AlertDialog de confirmação abre (não-dismissable)",
+    "step_6": "Usuário confirma ou cancela",
+    "step_7a_confirm": "DAO remove a rota (try/catch)",
+    "step_7b_success": "onDismissed é chamado, item desaparece com animação",
+    "step_7c_snackbar": "SnackBar exibe 'Rota removida com sucesso'",
+    "step_8_error": "Se erro: confirmDismiss retorna false, swipe reverte, SnackBar de erro"
+  },
+  "dao_integration": {
+    "class": "RunningRoutesLocalDaoSharedPrefs",
+    "method": "remove(String id) ou equivalente que remove a rota",
+    "wrapped_in": "try/catch com feedback ao usuário"
+  },
+  "feedback_messages": {
+    "success": {
+      "type": "SnackBar",
+      "message": "Rota removida com sucesso",
+      "duration": "2 segundos"
+    },
+    "error": {
+      "type": "SnackBar",
+      "message": "Erro ao remover rota",
+      "duration": "3 segundos"
+    }
+  },
+  "confirmDismiss_implementation": {
+    "signature": "Future<bool?> confirmDismiss(DismissDirection direction)",
+    "logic": [
+      "1. Validar direction == DismissDirection.endToStart",
+      "2. Abrir showDialog com AlertDialog (barrierDismissible: false)",
+      "3. Se usuário confirma: chamar DAO.remove(id) em try/catch",
+      "4. Se sucesso: retornar true (executa onDismissed)",
+      "5. Se erro: exibir SnackBar, retornar false (reverte swipe)",
+      "6. Se usuário cancela: retornar false"
+    ]
+  },
+  "onDismissed_implementation": {
+    "signature": "void onDismissed(DismissDirection direction)",
+    "logic": [
+      "1. Atualizar estado da lista parent (setState ou notifyListeners)",
+      "2. Exibir SnackBar de sucesso",
+      "3. Opcionalmente: recarregar lista via _loadRoutes() se necessário"
+    ]
+  },
+  "acceptance_criteria": [
+    "1. Swipe para esquerda exibe background vermelho com ícone trash",
+    "2. Background aparece apenas ao swipear (não aparece por default)",
+    "3. Ao completar ou tocar no background, abre AlertDialog",
+    "4. AlertDialog é não-dismissable (apenas botões fecham)",
+    "5. AlertDialog exibe título e mensagem com nome da rota",
+    "6. Botão 'Cancelar' reverte o swipe sem remover",
+    "7. Botão 'Remover' chama DAO.remove() e remove item",
+    "8. Se sucesso: SnackBar 'Rota removida com sucesso'",
+    "9. Se erro: SnackBar 'Erro ao remover rota', swipe reverte",
+    "10. Item desaparece com animação suave",
+    "11. Lista recarrega ou atualiza estado após remoção",
+    "12. Nenhuma lógica de edição/seleção é acionada"
+  ],
+  "dependencies": {
+    "imports": [
+      "package:flutter/material.dart",
+      "package:runsafe/domain/dto/running_route_dto.dart",
+      "package:runsafe/services/running_routes_local_dao.dart"
+    ],
+    "existing_files": [
+      "lib/widgets/running_route_list_item.dart",
+      "lib/widgets/running_route_list_widget.dart",
+      "lib/services/running_routes_local_dao.dart"
+    ]
+  },
+  "modification_points": {
+    "file": "lib/widgets/running_route_list_item.dart",
+    "changes": [
+      "Envolver ListTile em Dismissible widget",
+      "Implementar confirmDismiss Future",
+      "Implementar onDismissed callback",
+      "Adicionar background com Container vermelho"
+    ]
+  },
+  "error_scenarios": [
+    {
+      "scenario": "DAO falha ao remover",
+      "handling": "try/catch captura erro, retorna false em confirmDismiss, exibe SnackBar de erro"
+    },
+    {
+      "scenario": "Usuário cancela confirmação",
+      "handling": "Retorna false, swipe reverte suavemente"
+    },
+    {
+      "scenario": "Rota não encontrada",
+      "handling": "DAO retorna erro, tratado como acima"
+    }
+  ],
+  "animation_details": {
+    "dismissible_animation": "default (suave)",
+    "background_animation": "slide and fade in",
+    "item_removal_animation": "default Flutter (suave saída)"
+  },
+  "testing_checklist": [
+    "[ ] Swipe para esquerda exibe background",
+    "[ ] Swipe para direita reverte",
+    "[ ] Tap no background abre diálogo",
+    "[ ] Diálogo é não-dismissable",
+    "[ ] Cancelar reverte swipe",
+    "[ ] Remover chama DAO",
+    "[ ] SnackBar de sucesso exibe",
+    "[ ] SnackBar de erro exibe se falha",
+    "[ ] Item desaparece com animação",
+    "[ ] Lista permanece consistente",
+    "[ ] Sem regredir edição/seleção"
+  ]
+}

@@ -44,7 +44,7 @@ class SafetyAlertListItem extends StatelessWidget {
           height: 40,
           decoration: BoxDecoration(
             shape: BoxShape.circle,
-            color: color.withOpacity(0.2),
+            color: color.withValues(alpha: 0.2),
           ),
           child: Center(
             child: Text(

@@ -289,13 +289,13 @@ class _WeeklyGoalListWidgetState extends State<WeeklyGoalListWidget> {
     }
 
     if (_currentListing.data.isEmpty) {
-      return Center(
+      return const Center(
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
-            const Icon(Icons.flag_outlined, size: 48, color: Colors.grey),
-            const SizedBox(height: 12),
-            const Text('Nenhuma meta encontrada.'),
+            Icon(Icons.flag_outlined, size: 48, color: Colors.grey),
+            SizedBox(height: 12),
+            Text('Nenhuma meta encontrada.'),
           ],
         ),
       );

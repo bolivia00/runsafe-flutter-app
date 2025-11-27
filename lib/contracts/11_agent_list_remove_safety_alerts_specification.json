@@ -1,0 +1,195 @@
+{
+  "specification": "safety_alert_swipe_remove",
+  "version": "1.0",
+  "description": "Remoção por swipe (Dismissible) para safety alerts",
+  "entity": {
+    "name": "SafetyAlert",
+    "properties": [
+      {
+        "name": "id",
+        "type": "String",
+        "description": "Identificador único do alerta"
+      },
+      {
+        "name": "type",
+        "type": "AlertType enum",
+        "values": ["pothole", "noLighting", "suspiciousActivity", "other"],
+        "description": "Tipo de alerta"
+      },
+      {
+        "name": "severity",
+        "type": "int (1-5)",
+        "description": "Nível de severidade"
+      },
+      {
+        "name": "description",
+        "type": "String",
+        "description": "Descrição do alerta"
+      }
+    ]
+  },
+  "alert_type_mapping": {
+    "pothole": "Buraco",
+    "noLighting": "Falta de iluminação",
+    "suspiciousActivity": "Atividade suspeita",
+    "other": "Outro"
+  },
+  "dismissible_structure": {
+    "key": "ValueKey(alert.id)",
+    "direction": "DismissDirection.endToStart",
+    "description": "Swipe da direita para esquerda"
+  },
+  "background_design": {
+    "direction": "right-to-left",
+    "color": "Colors.red",
+    "icon": "Icons.delete",
+    "alignment": "Alignment.centerRight",
+    "padding": "EdgeInsets.only(right: 16)"
+  },
+  "confirmation_dialog": {
+    "dismissible": false,
+    "title": "Confirmar remoção",
+    "message": "Remover alerta de '{alertType}'? Esta ação não pode ser desfeita.",
+    "example_message": "Remover alerta de 'Buraco'? Esta ação não pode ser desfeita.",
+    "actions": [
+      {
+        "label": "Cancelar",
+        "return_value": false,
+        "color": "Colors.grey"
+      },
+      {
+        "label": "Remover",
+        "return_value": true,
+        "color": "Colors.red"
+      }
+    ]
+  },
+  "behavior_flow": {
+    "step_1": "Usuário faz swipe para esquerda em SafetyAlertListItem",
+    "step_2": "Background vermelho com ícone trash aparece com animação",
+    "step_3": "Usuário libera o gesto ou toca no background",
+    "step_4": "confirmDismiss é acionado",
+    "step_5": "AlertDialog de confirmação abre (não-dismissable)",
+    "step_6": "Usuário confirma ou cancela",
+    "step_7a_confirm": "DAO remove o alerta (try/catch)",
+    "step_7b_success": "onDismissed é chamado, item desaparece com animação",
+    "step_7c_snackbar": "SnackBar exibe 'Alerta removido com sucesso'",
+    "step_8_error": "Se erro: confirmDismiss retorna false, swipe reverte, SnackBar de erro"
+  },
+  "dao_integration": {
+    "class": "SafetyAlertsLocalDaoSharedPrefs",
+    "method": "remove(String id) ou equivalente que remove o alerta",
+    "wrapped_in": "try/catch com feedback ao usuário"
+  },
+  "feedback_messages": {
+    "success": {
+      "type": "SnackBar",
+      "message": "Alerta removido com sucesso",
+      "duration": "2 segundos"
+    },
+    "error": {
+      "type": "SnackBar",
+      "message": "Erro ao remover alerta",
+      "duration": "3 segundos"
+    }
+  },
+  "confirmDismiss_implementation": {
+    "signature": "Future<bool?> confirmDismiss(DismissDirection direction)",
+    "logic": [
+      "1. Validar direction == DismissDirection.endToStart",
+      "2. Abrir showDialog com AlertDialog (barrierDismissible: false)",
+      "3. Se usuário confirma: chamar DAO.remove(id) em try/catch",
+      "4. Se sucesso: retornar true (executa onDismissed)",
+      "5. Se erro: exibir SnackBar, retornar false (reverte swipe)",
+      "6. Se usuário cancela: retornar false"
+    ]
+  },
+  "onDismissed_implementation": {
+    "signature": "void onDismissed(DismissDirection direction)",
+    "logic": [
+      "1. Atualizar estado da lista parent (setState ou notifyListeners)",
+      "2. Exibir SnackBar de sucesso",
+      "3. Opcionalmente: recarregar lista via _loadAlerts() se necessário"
+    ]
+  },
+  "acceptance_criteria": [
+    "1. Swipe para esquerda exibe background vermelho com ícone trash",
+    "2. Background aparece apenas ao swipear (não aparece por default)",
+    "3. Ao completar ou tocar no background, abre AlertDialog",
+    "4. AlertDialog é não-dismissable (apenas botões fecham)",
+    "5. AlertDialog exibe título e mensagem com tipo do alerta",
+    "6. AlertType é mapeado para label em português (ex: 'pothole' → 'Buraco')",
+    "7. Botão 'Cancelar' reverte o swipe sem remover",
+    "8. Botão 'Remover' chama DAO.remove() e remove item",
+    "9. Se sucesso: SnackBar 'Alerta removido com sucesso'",
+    "10. Se erro: SnackBar 'Erro ao remover alerta', swipe reverte",
+    "11. Item desaparece com animação suave",
+    "12. Lista recarrega ou atualiza estado após remoção",
+    "13. Nenhuma lógica de edição/seleção é acionada",
+    "14. Severity não é exibida no diálogo (apenas tipo)"
+  ],
+  "dependencies": {
+    "imports": [
+      "package:flutter/material.dart",
+      "package:runsafe/domain/dto/safety_alert_dto.dart",
+      "package:runsafe/services/safety_alerts_local_dao.dart"
+    ],
+    "existing_files": [
+      "lib/widgets/safety_alert_list_item.dart",
+      "lib/widgets/safety_alert_list_widget.dart",
+      "lib/services/safety_alerts_local_dao.dart"
+    ]
+  },
+  "modification_points": {
+    "file": "lib/widgets/safety_alert_list_item.dart",
+    "changes": [
+      "Envolver ListTile em Dismissible widget",
+      "Implementar confirmDismiss Future",
+      "Implementar onDismissed callback",
+      "Adicionar background com Container vermelho",
+      "Mapear AlertType para label em português"
+    ]
+  },
+  "error_scenarios": [
+    {
+      "scenario": "DAO falha ao remover",
+      "handling": "try/catch captura erro, retorna false em confirmDismiss, exibe SnackBar de erro"
+    },
+    {
+      "scenario": "Usuário cancela confirmação",
+      "handling": "Retorna false, swipe reverte suavemente"
+    },
+    {
+      "scenario": "Alerta não encontrado",
+      "handling": "DAO retorna erro, tratado como acima"
+    }
+  ],
+  "animation_details": {
+    "dismissible_animation": "default (suave)",
+    "background_animation": "slide and fade in",
+    "item_removal_animation": "default Flutter (suave saída)"
+  },
+  "testing_checklist": [
+    "[ ] Swipe para esquerda exibe background",
+    "[ ] Swipe para direita reverte",
+    "[ ] Tap no background abre diálogo",
+    "[ ] Diálogo é não-dismissable",
+    "[ ] AlertType é exibido em português",
+    "[ ] Cancelar reverte swipe",
+    "[ ] Remover chama DAO",
+    "[ ] SnackBar de sucesso exibe",
+    "[ ] SnackBar de erro exibe se falha",
+    "[ ] Item desaparece com animação",
+    "[ ] Lista permanece consistente",
+    "[ ] Sem regredir edição/seleção"
+  ],
+  "ui_example": {
+    "normal_state": "ListTile com alerta",
+    "swiped_state": "Background vermelho com ícone trash visível",
+    "dialog_state": {
+      "title": "Confirmar remoção",
+      "body": "Remover alerta de 'Buraco'? Esta ação não pode ser desfeita.",
+      "buttons": ["Cancelar", "Remover"]
+    }
+  }
+}

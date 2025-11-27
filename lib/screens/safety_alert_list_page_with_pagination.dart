@@ -69,22 +69,17 @@ class _SafetyAlertListPageWithPaginationState
   }
 
   void _editAlert(BuildContext context, SafetyAlertDto alertDto) async {
-    try {
-      final alertEntity = _mapper.toEntity(alertDto);
+    final repository = context.read<SafetyAlertRepository>();
+    
+    final alertEntity = _mapper.toEntity(alertDto);
+    
+    final updatedAlert = await showSafetyAlertFormDialog(
+      context,
+      initial: alertEntity,
+    );
 
-      final repository = context.read<SafetyAlertRepository>();
-      final updatedAlert = await showSafetyAlertFormDialog(
-        context,
-        initial: alertEntity,
-      );
-
-      if (updatedAlert != null) {
-        repository.editAlert(updatedAlert);
-      }
-    } catch (e) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Erro ao editar alerta: $e')),
-      );
+    if (updatedAlert != null) {
+      repository.editAlert(updatedAlert);
     }
   }
 
