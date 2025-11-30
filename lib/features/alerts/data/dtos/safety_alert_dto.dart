@@ -1,36 +1,51 @@
 // ignore_for_file: non_constant_identifier_names
+
 class SafetyAlertDto {
-  final String alert_id;
+  final String id;
   final String description;
-  final String alert_type; // Fiel ao backend (String)
-  final String timestamp; // Fiel ao backend (String ISO 8601)
+  final String type;
   final int severity;
+  final String createdAt;
+  final String updatedAt;
 
   SafetyAlertDto({
-    required this.alert_id,
+    required this.id,
     required this.description,
-    required this.alert_type,
-    required this.timestamp,
+    required this.type,
     required this.severity,
+    required this.createdAt,
+    required this.updatedAt,
   });
 
   factory SafetyAlertDto.fromJson(Map<String, dynamic> json) {
     return SafetyAlertDto(
-      alert_id: json['alert_id'] as String,
-      description: json['description'] as String,
-      alert_type: json['alert_type'] as String,
-      timestamp: json['timestamp'] as String,
-      severity: json['severity'] as int,
+      id: json['id']?.toString() ?? '',
+      description: json['description'] ?? '',
+      type: json['type'] ?? 'other',
+      severity: json['severity'] is int ? json['severity'] : int.tryParse(json['severity'].toString()) ?? 1,
+      createdAt: json['created_at'] ?? DateTime.now().toIso8601String(),
+      updatedAt: json['updated_at'] ?? DateTime.now().toIso8601String(),
     );
   }
 
   Map<String, dynamic> toJson() {
     return {
-      'alert_id': alert_id,
+      'id': id,
       'description': description,
-      'alert_type': alert_type,
-      'timestamp': timestamp,
+      'type': type,
       'severity': severity,
+      'created_at': createdAt,
+      'updated_at': updatedAt,
+    };
+  }
+  
+  Map<String, dynamic> toSupabaseJson() {
+    return {
+      'description': description,
+      'type': type,
+      'severity': severity,
+      'created_at': createdAt,
+      'updated_at': DateTime.now().toIso8601String(), 
     };
   }
 }

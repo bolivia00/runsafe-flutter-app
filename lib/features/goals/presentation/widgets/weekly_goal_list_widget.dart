@@ -1,18 +1,14 @@
 import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
 import 'package:runsafe/features/goals/data/dtos/weekly_goal_dto.dart';
-import 'package:runsafe/core/models/listing_response.dart';
-import 'package:runsafe/core/services/weekly_goals_local_dao.dart';
+import 'package:runsafe/features/goals/data/repositories/weekly_goal_repository.dart';
+import 'package:runsafe/features/goals/domain/entities/weekly_goal.dart';
 import 'package:runsafe/features/goals/presentation/widgets/weekly_goal_list_item.dart';
+import 'package:runsafe/core/utils/app_colors.dart';
 
-/// Widget de listagem de metas semanais com suporte a paginação e filtros
 class WeeklyGoalListWidget extends StatefulWidget {
-  /// Callback quando uma meta é selecionada para edição
   final Function(WeeklyGoalDto)? onEdit;
-
-  /// Callback quando uma meta é excluída
   final Function(WeeklyGoalDto)? onDelete;
-
-  /// Callback para renderizar item customizado (opcional)
   final Widget Function(BuildContext, WeeklyGoalDto, int)? itemBuilder;
 
   const WeeklyGoalListWidget({
@@ -27,17 +23,21 @@ class WeeklyGoalListWidget extends StatefulWidget {
 }
 
 class _WeeklyGoalListWidgetState extends State<WeeklyGoalListWidget> {
-  final WeeklyGoalsLocalDaoSharedPrefs _dao =
-      WeeklyGoalsLocalDaoSharedPrefs();
+  // --- ESTADO LOCAL ---
+  List<WeeklyGoal> _displayedGoals = []; 
+  int _totalItems = 0;
+  int _totalPages = 0;
+  bool _isLoading = false;
 
-  late ListingResponse<WeeklyGoalDto> _currentListing;
-  bool _isLoading = true;
-  String? _errorMessage;
-
+  // Filtros e Paginação
   int _currentPage = 1;
   final int _pageSize = 20;
-  String _sortBy = 'target_km';
-  String _sortDir = 'desc';
+  
+  // Ordenação
+  String _sortBy = 'target_km'; 
+  String _sortDir = 'desc'; 
+  
+  // Valores dos filtros
   double? _minTargetKm;
   double? _minProgressPercent;
 
@@ -49,7 +49,10 @@ class _WeeklyGoalListWidgetState extends State<WeeklyGoalListWidget> {
     super.initState();
     _minTargetKmController = TextEditingController();
     _minProgressController = TextEditingController();
-    _loadGoals();
+    
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      _processGoals();
+    });
   }
 
   @override
@@ -59,260 +62,322 @@ class _WeeklyGoalListWidgetState extends State<WeeklyGoalListWidget> {
     super.dispose();
   }
 
-  Future<void> _loadGoals({int page = 1}) async {
-    setState(() {
-      _isLoading = true;
-      _errorMessage = null;
+  // --- LÓGICA DE PROCESSAMENTO ---
+  void _processGoals({int page = 1}) {
+    setState(() => _isLoading = true);
+
+    // 1. Pega os dados BRUTOS do repositório (Entidades)
+    final repository = Provider.of<WeeklyGoalRepository>(context, listen: false);
+    List<WeeklyGoal> allGoals = List.from(repository.goals);
+
+    // 2. APLICA FILTROS
+    if (_minTargetKm != null) {
+      allGoals = allGoals.where((g) => g.targetKm >= _minTargetKm!).toList();
+    }
+    
+    if (_minProgressPercent != null) {
+      // A entidade retorna 0.0 a 1.0, o filtro é 0 a 100
+      allGoals = allGoals.where((g) => (g.progressPercentage * 100) >= _minProgressPercent!).toList();
+    }
+
+    // 3. APLICA ORDENAÇÃO
+    allGoals.sort((a, b) {
+      int comparison = 0;
+      switch (_sortBy) {
+        case 'target_km':
+          comparison = a.targetKm.compareTo(b.targetKm);
+          break;
+        case 'progress':
+          comparison = a.progressPercentage.compareTo(b.progressPercentage);
+          break;
+        case 'current_km':
+          comparison = a.currentKm.compareTo(b.currentKm);
+          break;
+        default:
+          comparison = 0;
+      }
+      return _sortDir == 'asc' ? comparison : -comparison;
     });
 
-    try {
-      final filters = <String, dynamic>{};
-      if (_minTargetKm != null) filters['min_target_km'] = _minTargetKm;
-      if (_minProgressPercent != null) filters['min_progress_percent'] = _minProgressPercent;
-
-      final listing = await _dao.list(
-        page: page,
-        pageSize: _pageSize,
-        sortBy: _sortBy,
-        sortDir: _sortDir,
-        filters: filters.isNotEmpty ? filters : null,
-      );
-
-      setState(() {
-        _currentListing = listing;
-        _currentPage = page;
-        _isLoading = false;
-      });
-    } catch (e) {
-      setState(() {
-        _errorMessage = 'Erro ao carregar metas: $e';
-        _isLoading = false;
-      });
+    // 4. APLICA PAGINAÇÃO
+    final total = allGoals.length;
+    final pages = (total / _pageSize).ceil();
+    final safePage = (page > pages && pages > 0) ? pages : (page < 1 ? 1 : page);
+    
+    final startIndex = (safePage - 1) * _pageSize;
+    final endIndex = (startIndex + _pageSize) > total ? total : (startIndex + _pageSize);
+    
+    List<WeeklyGoal> pagedData = [];
+    if (startIndex < total) {
+      pagedData = allGoals.sublist(startIndex, endIndex);
     }
+
+    // 5. ATUALIZA A TELA
+    setState(() {
+      _currentPage = safePage;
+      _totalItems = total;
+      _totalPages = pages;
+      _displayedGoals = pagedData;
+      _isLoading = false;
+    });
   }
 
+  // --- CONTROLES DE UI ---
   void _nextPage() {
-    if (_currentListing.hasNextPage) {
-      _loadGoals(page: _currentPage + 1);
+    if (_currentPage < _totalPages) {
+      _processGoals(page: _currentPage + 1);
     }
   }
 
   void _previousPage() {
-    if (_currentListing.hasPreviousPage) {
-      _loadGoals(page: _currentPage - 1);
+    if (_currentPage > 1) {
+      _processGoals(page: _currentPage - 1);
     }
   }
 
   void _changeSortBy(String field) {
     setState(() {
       _sortBy = field;
-      _currentPage = 1;
     });
-    _loadGoals();
+    _processGoals(page: 1);
   }
 
   void _toggleSortDir() {
     setState(() {
       _sortDir = _sortDir == 'asc' ? 'desc' : 'asc';
-      _currentPage = 1;
     });
-    _loadGoals();
+    _processGoals(page: 1);
   }
 
   void _applyFilters() {
+    FocusScope.of(context).unfocus();
     try {
       _minTargetKm = _minTargetKmController.text.isNotEmpty
-          ? double.parse(_minTargetKmController.text)
+          ? double.parse(_minTargetKmController.text.replaceAll(',', '.'))
           : null;
       _minProgressPercent = _minProgressController.text.isNotEmpty
-          ? double.parse(_minProgressController.text)
+          ? double.parse(_minProgressController.text.replaceAll(',', '.'))
           : null;
-
-      _currentPage = 1;
-      _loadGoals();
+      _processGoals(page: 1);
     } catch (e) {
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Valores de filtro inválidos')),
+        const SnackBar(content: Text('Valores inválidos. Use apenas números.')),
       );
     }
   }
 
   void _clearFilters() {
+    FocusScope.of(context).unfocus();
     _minTargetKmController.clear();
     _minProgressController.clear();
     setState(() {
       _minTargetKm = null;
       _minProgressPercent = null;
-      _currentPage = 1;
     });
-    _loadGoals();
+    _processGoals(page: 1);
   }
 
   @override
   Widget build(BuildContext context) {
-    return Column(
-      children: [
-        // --- Filtros ---
-        Padding(
-          padding: const EdgeInsets.all(16.0),
-          child: ExpansionTile(
-            title: const Text('Filtrar Metas'),
-            children: [
-              Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 16.0),
-                child: Column(
-                  children: [
-                    TextField(
-                      controller: _minTargetKmController,
-                      decoration: const InputDecoration(
-                        labelText: 'Distância mínima (km)',
-                        border: OutlineInputBorder(),
-                        isDense: true,
-                      ),
-                      keyboardType: const TextInputType.numberWithOptions(decimal: true),
-                    ),
-                    const SizedBox(height: 12),
-                    TextField(
-                      controller: _minProgressController,
-                      decoration: const InputDecoration(
-                        labelText: 'Progresso mínimo (%)',
-                        border: OutlineInputBorder(),
-                        isDense: true,
-                      ),
-                      keyboardType: const TextInputType.numberWithOptions(decimal: true),
-                    ),
-                    const SizedBox(height: 12),
-                    Row(
-                      mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-                      children: [
-                        ElevatedButton(
-                          onPressed: _applyFilters,
-                          child: const Text('Aplicar'),
-                        ),
-                        OutlinedButton(
-                          onPressed: _clearFilters,
-                          child: const Text('Limpar'),
-                        ),
-                      ],
-                    ),
-                    const SizedBox(height: 8),
-                  ],
-                ),
-              ),
-            ],
-          ),
-        ),
+    // Reage a mudanças no repositório
+    final repo = Provider.of<WeeklyGoalRepository>(context);
+    if (!_isLoading && repo.goals.length != _totalItems && _minTargetKm == null) {
+       // Opcional: Atualizar automaticamente se o número de itens mudar
+       // WidgetsBinding.instance.addPostFrameCallback((_) => _processGoals(page: _currentPage));
+    }
 
-        // --- Ordenação ---
-        Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 16.0),
-          child: Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            children: [
-              DropdownButton<String>(
-                value: _sortBy,
-                items: const [
-                  DropdownMenuItem(value: 'target_km', child: Text('Distância')),
-                  DropdownMenuItem(value: 'progress', child: Text('Progresso')),
-                  DropdownMenuItem(value: 'current_km', child: Text('Atual')),
-                ],
-                onChanged: (value) {
-                  if (value != null) _changeSortBy(value);
-                },
-              ),
-              IconButton(
-                icon: Icon(
-                  _sortDir == 'asc' ? Icons.arrow_upward : Icons.arrow_downward,
-                ),
-                onPressed: _toggleSortDir,
-                tooltip: _sortDir == 'asc' ? 'Ordenar decrescente' : 'Ordenar crescente',
-              ),
-            ],
-          ),
-        ),
-
-        // --- Conteúdo Principal ---
-        Expanded(
-          child: _buildContent(),
-        ),
-
-        // --- Paginação ---
-        if (!_isLoading && _currentListing.total > 0)
+    return SingleChildScrollView(
+      physics: const ClampingScrollPhysics(),
+      child: Column(
+        children: [
+          // FILTROS
           Padding(
             padding: const EdgeInsets.all(16.0),
-            child: Row(
-              mainAxisAlignment: MainAxisAlignment.center,
+            child: ExpansionTile(
+              title: const Text('Filtrar Metas', style: TextStyle(fontWeight: FontWeight.bold)),
               children: [
-                IconButton(
-                  icon: const Icon(Icons.chevron_left),
-                  onPressed:
-                      _currentListing.hasPreviousPage ? _previousPage : null,
-                ),
-                Text(
-                  'Página ${_currentListing.page} de ${_currentListing.totalPages}',
-                  style: const TextStyle(fontSize: 14),
-                ),
-                IconButton(
-                  icon: const Icon(Icons.chevron_right),
-                  onPressed: _currentListing.hasNextPage ? _nextPage : null,
+                Padding(
+                  padding: const EdgeInsets.symmetric(horizontal: 16.0),
+                  child: Column(
+                    children: [
+                      TextField(
+                        controller: _minTargetKmController,
+                        decoration: const InputDecoration(
+                          labelText: 'Distância mínima (km)',
+                          border: OutlineInputBorder(),
+                          isDense: true,
+                          prefixIcon: Icon(Icons.straighten),
+                        ),
+                        keyboardType: const TextInputType.numberWithOptions(decimal: true),
+                      ),
+                      const SizedBox(height: 12),
+                      TextField(
+                        controller: _minProgressController,
+                        decoration: const InputDecoration(
+                          labelText: 'Progresso mínimo (%)',
+                          border: OutlineInputBorder(),
+                          isDense: true,
+                          prefixIcon: Icon(Icons.percent),
+                        ),
+                        keyboardType: const TextInputType.numberWithOptions(decimal: true),
+                      ),
+                      const SizedBox(height: 12),
+                      Row(
+                        children: [
+                          Expanded(
+                            child: ElevatedButton(
+                              style: ElevatedButton.styleFrom(
+                                backgroundColor: AppColors.emerald,
+                                foregroundColor: Colors.white,
+                                padding: const EdgeInsets.symmetric(vertical: 12),
+                              ),
+                              onPressed: _applyFilters,
+                              child: const Text('Aplicar Filtros'),
+                            ),
+                          ),
+                          const SizedBox(width: 12),
+                          Expanded(
+                            child: OutlinedButton(
+                              style: OutlinedButton.styleFrom(
+                                foregroundColor: Colors.grey[700],
+                                padding: const EdgeInsets.symmetric(vertical: 12),
+                                side: BorderSide(color: Colors.grey[400]!),
+                              ),
+                              onPressed: _clearFilters,
+                              child: const Text('Limpar'),
+                            ),
+                          ),
+                        ],
+                      ),
+                      const SizedBox(height: 16),
+                    ],
+                  ),
                 ),
               ],
             ),
           ),
-      ],
+
+          // ORDENAÇÃO
+          Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 16.0),
+            child: Container(
+              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
+              decoration: BoxDecoration(
+                color: Colors.grey[100],
+                borderRadius: BorderRadius.circular(8),
+                border: Border.all(color: Colors.grey[300]!),
+              ),
+              child: Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  DropdownButtonHideUnderline(
+                    child: DropdownButton<String>(
+                      value: _sortBy,
+                      icon: const Icon(Icons.sort),
+                      items: const [
+                        DropdownMenuItem(value: 'target_km', child: Text('Distância')),
+                        DropdownMenuItem(value: 'progress', child: Text('Progresso')),
+                        DropdownMenuItem(value: 'current_km', child: Text('Km Atual')),
+                      ],
+                      onChanged: (value) {
+                        if (value != null) _changeSortBy(value);
+                      },
+                    ),
+                  ),
+                  IconButton(
+                    icon: Icon(
+                      _sortDir == 'asc' ? Icons.arrow_upward : Icons.arrow_downward,
+                      color: AppColors.emerald,
+                    ),
+                    onPressed: _toggleSortDir,
+                    tooltip: _sortDir == 'asc' ? 'Crescente' : 'Decrescente',
+                  ),
+                ],
+              ),
+            ),
+          ),
+
+          const SizedBox(height: 10),
+
+          // CONTEÚDO
+          _buildContent(),
+
+          // PAGINAÇÃO
+          if (!_isLoading && _totalItems > 0)
+            Padding(
+              padding: const EdgeInsets.all(16.0),
+              child: Row(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  IconButton(
+                    icon: const Icon(Icons.chevron_left),
+                    onPressed: (_currentPage > 1) ? _previousPage : null,
+                  ),
+                  Text(
+                    'Página $_currentPage de $_totalPages',
+                    style: const TextStyle(fontSize: 14, fontWeight: FontWeight.bold),
+                  ),
+                  IconButton(
+                    icon: const Icon(Icons.chevron_right),
+                    onPressed: (_currentPage < _totalPages) ? _nextPage : null,
+                  ),
+                ],
+              ),
+            ),
+           const SizedBox(height: 80),
+        ],
+      ),
     );
   }
 
   Widget _buildContent() {
     if (_isLoading) {
-      return const Center(
-        child: CircularProgressIndicator(),
+      return const Padding(
+        padding: EdgeInsets.all(40.0),
+        child: Center(child: CircularProgressIndicator()),
       );
     }
 
-    if (_errorMessage != null) {
-      return Center(
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            const Icon(Icons.error_outline, size: 48, color: Colors.red),
-            const SizedBox(height: 12),
-            Text(_errorMessage!),
-            const SizedBox(height: 12),
-            ElevatedButton(
-              onPressed: () => _loadGoals(),
-              child: const Text('Tentar novamente'),
-            ),
-          ],
-        ),
-      );
-    }
-
-    if (_currentListing.data.isEmpty) {
-      return const Center(
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Icon(Icons.flag_outlined, size: 48, color: Colors.grey),
-            SizedBox(height: 12),
-            Text('Nenhuma meta encontrada.'),
-          ],
+    if (_displayedGoals.isEmpty) {
+      return Padding(
+        padding: const EdgeInsets.all(40.0),
+        child: Center(
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Icon(Icons.filter_list_off, size: 64, color: Colors.grey[300]),
+              const SizedBox(height: 16),
+              const Text(
+                'Nenhuma meta encontrada.',
+                style: TextStyle(color: Colors.grey, fontSize: 16),
+              ),
+            ],
+          ),
         ),
       );
     }
 
     return ListView.separated(
-      itemCount: _currentListing.data.length,
+      shrinkWrap: true,
+      physics: const NeverScrollableScrollPhysics(),
+      itemCount: _displayedGoals.length,
       separatorBuilder: (_, __) => const Divider(height: 1),
       itemBuilder: (context, index) {
-        final goal = _currentListing.data[index];
+        // --- CONVERSÃO CRÍTICA: Entity -> DTO ---
+        final entity = _displayedGoals[index];
+        
+        final dto = WeeklyGoalDto(
+          target_km: entity.targetKm,
+          current_progress_km: entity.currentKm,
+        );
+        // -----------------------------------------
 
         if (widget.itemBuilder != null) {
-          return widget.itemBuilder!(context, goal, index);
+          return widget.itemBuilder!(context, dto, index);
         }
 
         return WeeklyGoalListItem(
-          goal: goal,
+          goal: dto,
           onEdit: widget.onEdit,
           onDelete: widget.onDelete,
         );
@@ -320,5 +385,3 @@ class _WeeklyGoalListWidgetState extends State<WeeklyGoalListWidget> {
     );
   }
 }
-
-

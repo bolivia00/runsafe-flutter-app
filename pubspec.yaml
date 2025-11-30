@@ -26,6 +26,7 @@ dependencies:
   provider: ^6.1.2
   
   uuid: ^4.4.0
+  supabase_flutter: ^2.10.3
   
 dev_dependencies:
   flutter_test:

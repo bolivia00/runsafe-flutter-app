@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_svg/flutter_svg.dart';
-import 'package:runsafe/features/onboarding/presentation/pages/onboarding_screen.dart';
-import 'dart:async';
+import 'package:runsafe/core/services/storage_service.dart';
+import 'package:runsafe/core/utils/app_colors.dart'; // <--- Importante ter esse import
 
 class SplashScreen extends StatefulWidget {
   const SplashScreen({super.key});
@@ -11,20 +11,31 @@ class SplashScreen extends StatefulWidget {
 }
 
 class _SplashScreenState extends State<SplashScreen> {
+  final StorageService _storageService = StorageService();
+
   @override
   void initState() {
     super.initState();
-    Timer(const Duration(seconds: 3), () {
-      Navigator.of(context).pushReplacement(
-        MaterialPageRoute(builder: (context) => const OnboardingScreen()),
-      );
-    });
+    _checkConsentAndNavigate();
+  }
+
+  Future<void> _checkConsentAndNavigate() async {
+    await Future.delayed(const Duration(seconds: 3));
+    final bool hasConsented = await _storageService.hasUserConsented();
+    
+    // Rota correta conforme seu main.dart
+    final String route = hasConsented ? '/home' : '/privacy';
+
+    if (mounted) {
+      Navigator.of(context).pushReplacementNamed(route);
+    }
   }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: Theme.of(context).colorScheme.primary,
+      // AQUI ESTAVA O PROBLEMA: Agora usa a cor oficial do App
+      backgroundColor: AppColors.emerald, 
       body: Center(
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
@@ -43,6 +54,10 @@ class _SplashScreenState extends State<SplashScreen> {
                 color: Colors.white,
               ),
             ),
+            const SizedBox(height: 24),
+            const CircularProgressIndicator(
+              valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
+            )
           ],
         ),
       ),
