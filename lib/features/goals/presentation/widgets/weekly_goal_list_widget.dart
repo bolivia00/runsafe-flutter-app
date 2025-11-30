@@ -1,15 +1,14 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
-import 'package:runsafe/features/goals/data/dtos/weekly_goal_dto.dart';
-import 'package:runsafe/features/goals/data/repositories/weekly_goal_repository.dart';
 import 'package:runsafe/features/goals/domain/entities/weekly_goal.dart';
+import 'package:runsafe/features/goals/presentation/providers/weekly_goals_provider.dart';
 import 'package:runsafe/features/goals/presentation/widgets/weekly_goal_list_item.dart';
 import 'package:runsafe/core/utils/app_colors.dart';
 
 class WeeklyGoalListWidget extends StatefulWidget {
-  final Function(WeeklyGoalDto)? onEdit;
-  final Function(WeeklyGoalDto)? onDelete;
-  final Widget Function(BuildContext, WeeklyGoalDto, int)? itemBuilder;
+  final Function(WeeklyGoal)? onEdit;
+  final Function(WeeklyGoal)? onDelete;
+  final Widget Function(BuildContext, WeeklyGoal, int)? itemBuilder;
 
   const WeeklyGoalListWidget({
     super.key,
@@ -66,9 +65,9 @@ class _WeeklyGoalListWidgetState extends State<WeeklyGoalListWidget> {
   void _processGoals({int page = 1}) {
     setState(() => _isLoading = true);
 
-    // 1. Pega os dados BRUTOS do repositório (Entidades)
-    final repository = Provider.of<WeeklyGoalRepository>(context, listen: false);
-    List<WeeklyGoal> allGoals = List.from(repository.goals);
+    // 1. Pega os dados BRUTOS do provider (Entidades)
+    final provider = Provider.of<WeeklyGoalsProvider>(context, listen: false);
+    List<WeeklyGoal> allGoals = List.from(provider.items);
 
     // 2. APLICA FILTROS
     if (_minTargetKm != null) {
@@ -179,9 +178,9 @@ class _WeeklyGoalListWidgetState extends State<WeeklyGoalListWidget> {
 
   @override
   Widget build(BuildContext context) {
-    // Reage a mudanças no repositório
-    final repo = Provider.of<WeeklyGoalRepository>(context);
-    if (!_isLoading && repo.goals.length != _totalItems && _minTargetKm == null) {
+    // Reage a mudanças no provider
+    final provider = Provider.of<WeeklyGoalsProvider>(context);
+    if (!_isLoading && provider.items.length != _totalItems && _minTargetKm == null) {
        // Opcional: Atualizar automaticamente se o número de itens mudar
        // WidgetsBinding.instance.addPostFrameCallback((_) => _processGoals(page: _currentPage));
     }
@@ -363,21 +362,14 @@ class _WeeklyGoalListWidgetState extends State<WeeklyGoalListWidget> {
       itemCount: _displayedGoals.length,
       separatorBuilder: (_, __) => const Divider(height: 1),
       itemBuilder: (context, index) {
-        // --- CONVERSÃO CRÍTICA: Entity -> DTO ---
-        final entity = _displayedGoals[index];
-        
-        final dto = WeeklyGoalDto(
-          target_km: entity.targetKm,
-          current_progress_km: entity.currentKm,
-        );
-        // -----------------------------------------
+        final goal = _displayedGoals[index];
 
         if (widget.itemBuilder != null) {
-          return widget.itemBuilder!(context, dto, index);
+          return widget.itemBuilder!(context, goal, index);
         }
 
         return WeeklyGoalListItem(
-          goal: dto,
+          goal: goal,
           onEdit: widget.onEdit,
           onDelete: widget.onDelete,
         );

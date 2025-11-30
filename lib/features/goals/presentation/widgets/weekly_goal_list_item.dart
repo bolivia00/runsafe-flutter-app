@@ -1,11 +1,11 @@
 import 'package:flutter/material.dart';
-import 'package:runsafe/features/goals/data/dtos/weekly_goal_dto.dart';
+import 'package:runsafe/features/goals/domain/entities/weekly_goal.dart';
 
 /// Widget de item individual para meta semanal
 class WeeklyGoalListItem extends StatelessWidget {
-  final WeeklyGoalDto goal;
-  final Function(WeeklyGoalDto)? onEdit;
-  final Function(WeeklyGoalDto)? onDelete;
+  final WeeklyGoal goal;
+  final Function(WeeklyGoal)? onEdit;
+  final Function(WeeklyGoal)? onDelete;
 
   const WeeklyGoalListItem({
     super.key,
@@ -15,9 +15,7 @@ class WeeklyGoalListItem extends StatelessWidget {
   });
 
   double _calculateProgressPercent() {
-    if (goal.target_km <= 0) return 0.0;
-    final progress = (goal.current_progress_km / goal.target_km) * 100;
-    return progress.clamp(0.0, 100.0);
+    return goal.progressPercentage * 100;
   }
 
   String _formatProgress() {
@@ -30,7 +28,7 @@ class WeeklyGoalListItem extends StatelessWidget {
     final progressPercent = _calculateProgressPercent();
 
     return Dismissible(
-      key: ValueKey('${goal.target_km}_${goal.current_progress_km}'),
+      key: ValueKey(goal.id),
       direction: DismissDirection.endToStart,
       onDismissed: (_) {
         onDelete?.call(goal);
@@ -50,7 +48,7 @@ class WeeklyGoalListItem extends StatelessWidget {
       child: ListTile(
         leading: const Icon(Icons.flag),
         title: Text(
-          'Meta: ${goal.target_km.toStringAsFixed(2)} km',
+          'Meta: ${goal.targetKm.toStringAsFixed(2)} km',
           overflow: TextOverflow.ellipsis,
           maxLines: 1,
         ),
@@ -69,7 +67,7 @@ class WeeklyGoalListItem extends StatelessWidget {
             Padding(
               padding: const EdgeInsets.only(top: 4.0),
               child: Text(
-                '${goal.current_progress_km.toStringAsFixed(2)} / ${goal.target_km.toStringAsFixed(2)} km - ${_formatProgress()}',
+                '${goal.currentKm.toStringAsFixed(2)} / ${goal.targetKm.toStringAsFixed(2)} km - ${_formatProgress()}',
                 style: Theme.of(context).textTheme.bodySmall,
               ),
             ),

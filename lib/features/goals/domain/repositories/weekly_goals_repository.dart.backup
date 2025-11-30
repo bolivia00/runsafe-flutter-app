@@ -1,0 +1,16 @@
+import 'package:runsafe/features/goals/domain/entities/weekly_goal.dart';
+
+/// Interface do repositório para WeeklyGoals
+abstract class WeeklyGoalsRepository {
+  /// Adiciona ou atualiza um goal
+  Future<void> add(WeeklyGoal goal);
+
+  /// Lista todos os goals de um usuário
+  Future<List<WeeklyGoal>> listForUser(String userId);
+
+  /// Remove um goal pelo ID
+  Future<void> remove(String id);
+
+  /// Remove todos os goals de um usuário
+  Future<void> clearForUser(String userId);
+}

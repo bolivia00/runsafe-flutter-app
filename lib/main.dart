@@ -2,7 +2,10 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:supabase_flutter/supabase_flutter.dart'; // <-- ADICIONADO
 
-import 'package:runsafe/features/goals/data/repositories/weekly_goal_repository.dart';
+import 'package:runsafe/core/services/storage_service.dart';
+import 'package:runsafe/features/goals/data/datasources/weekly_goals_local_dao.dart';
+import 'package:runsafe/features/goals/data/repositories/weekly_goals_repository_impl.dart';
+import 'package:runsafe/features/goals/presentation/providers/weekly_goals_provider.dart';
 import 'package:runsafe/features/alerts/data/repositories/safety_alert_repository.dart';
 import 'package:runsafe/features/routes/data/repositories/waypoint_repository.dart';
 import 'package:runsafe/features/routes/data/repositories/running_route_repository.dart';
@@ -36,7 +39,11 @@ Future<void> main() async {
           create: (context) => ProfileRepository()..loadPhotoPath(),
         ),
         ChangeNotifierProvider(
-          create: (context) => WeeklyGoalRepository()..loadGoals(),
+          create: (context) => WeeklyGoalsProvider(
+            WeeklyGoalsRepositoryImpl(
+              WeeklyGoalsLocalDao(StorageService()),
+            ),
+          )..load('default-user'),
         ),
         ChangeNotifierProvider(
           create: (context) => SafetyAlertRepository()..loadAlerts(),

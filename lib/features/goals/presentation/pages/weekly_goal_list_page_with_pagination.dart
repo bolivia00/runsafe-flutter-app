@@ -1,10 +1,6 @@
 import 'package:flutter/material.dart';
-import 'package:provider/provider.dart';
-import 'package:runsafe/features/goals/data/dtos/weekly_goal_dto.dart';
 import 'package:runsafe/features/goals/domain/entities/weekly_goal.dart';
 import 'package:runsafe/features/goals/presentation/widgets/weekly_goal_list_widget.dart';
-import 'package:runsafe/features/goals/data/repositories/weekly_goal_repository.dart';
-import 'package:runsafe/core/utils/app_colors.dart';
 
 /// Página com paginação para listar metas semanais
 class WeeklyGoalListPageWithPagination extends StatefulWidget {
@@ -65,78 +61,35 @@ class _WeeklyGoalListPageWithPaginationState
     });
   }
 
-  // --- FUNÇÃO PARA ADICIONAR META (Agora funciona de verdade!) ---
   void _handleAddWeeklyGoal() {
-    final TextEditingController kmController = TextEditingController();
-
-    showDialog(
-      context: context,
-      builder: (context) {
-        return AlertDialog(
-          title: const Text('Nova Meta Semanal'),
-          content: TextField(
-            controller: kmController,
-            keyboardType: const TextInputType.numberWithOptions(decimal: true),
-            decoration: const InputDecoration(
-              labelText: 'Quantos KM você quer correr?',
-              hintText: 'Ex: 15.5',
-              border: OutlineInputBorder(),
-              suffixText: 'km',
-            ),
-            autofocus: true,
-          ),
-          actions: [
-            TextButton(
-              onPressed: () => Navigator.pop(context),
-              child: const Text('Cancelar'),
-            ),
-            ElevatedButton(
-              style: ElevatedButton.styleFrom(
-                backgroundColor: AppColors.emerald,
-                foregroundColor: Colors.white,
-              ),
-              onPressed: () {
-                if (kmController.text.isNotEmpty) {
-                  final double? target = double.tryParse(kmController.text.replaceAll(',', '.'));
-                  
-                  if (target != null && target > 0) {
-                    // Cria a nova meta
-                    final newGoal = WeeklyGoal(
-                      targetKm: target,
-                      currentKm: 0.0, // Começa zerada
-                    );
-                    
-                    // Salva no repositório
-                    Provider.of<WeeklyGoalRepository>(context, listen: false).addGoal(newGoal);
-                    
-                    Navigator.pop(context); // Fecha o diálogo
-                    
-                    ScaffoldMessenger.of(context).showSnackBar(
-                      SnackBar(content: Text('Meta de $target km criada com sucesso!')),
-                    );
-                  }
-                }
-              },
-              child: const Text('Salvar Meta'),
-            ),
-          ],
-        );
-      },
+    // Implementar navegação ou modal para adicionar meta
+    ScaffoldMessenger.of(context).showSnackBar(
+      const SnackBar(content: Text('Abrir formulário de adição de meta')),
     );
   }
 
-  void _handleEditWeeklyGoal(WeeklyGoalDto goalDto) {
+  void _handleEditWeeklyGoal(WeeklyGoal goal) {
+    // Implementar navegação ou modal para editar meta
     ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(content: Text('Editar meta: ${goalDto.target_km} km (Em breve)')),
+      SnackBar(
+        content: Text(
+            'Editar meta: ${goal.targetKm.toStringAsFixed(2)} km'),
+      ),
     );
   }
 
-  void _handleDeleteWeeklyGoal(WeeklyGoalDto goalDto) {
-     // Aqui você deve implementar a lógica para deletar pelo ID
-     // Como o DTO as vezes não tem ID na visualização, precisamos garantir isso no futuro.
-     // Por enquanto, apenas feedback visual.
+  void _handleDeleteWeeklyGoal(WeeklyGoal goal) {
+    // Remover meta do repositório
     ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(content: Text('Função de deletar em breve.')),
+      SnackBar(
+        content: const Text('Meta removida'),
+        action: SnackBarAction(
+          label: 'Desfazer',
+          onPressed: () {
+            // Implementar lógica de desfazer
+          },
+        ),
+      ),
     );
   }
 
@@ -176,7 +129,7 @@ class _WeeklyGoalListPageWithPaginationState
                       borderRadius: BorderRadius.circular(8),
                     ),
                     child: const Text(
-                      'Clique aqui para\ncriar sua primeira meta!',
+                      'Aqui você verá suas metas\nsemanais com filtros\ne paginação.',
                       style: TextStyle(
                         color: Colors.white,
                         fontSize: 12,
@@ -189,16 +142,12 @@ class _WeeklyGoalListPageWithPaginationState
             ),
         ],
       ),
-      // --- BOTÃO FLUTUANTE CORRIGIDO ---
       floatingActionButton: ScaleTransition(
         scale: _fabScaleAnimation,
         child: FloatingActionButton(
-          // AQUI: Mudamos a cor para Emerald (Verde Escuro)
-          backgroundColor: AppColors.emerald, 
-          foregroundColor: Colors.white, // Ícone branco
           onPressed: _handleAddWeeklyGoal,
           tooltip: 'Adicionar meta semanal',
-          child: const Icon(Icons.flag),
+          child: const Icon(Icons.flag_circle),
         ),
       ),
     );

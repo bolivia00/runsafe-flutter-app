@@ -132,16 +132,15 @@ class _PrivacyPolicyScreenState extends State<PrivacyPolicyScreen> {
                 backgroundColor: _isChecked ? AppColors.emerald : Colors.grey,
               ),
               onPressed: _isChecked
-                  ? () async {
-                      // Salva
-                      await _storageService.saveUserConsent();
-                      
-                      if (mounted) {
+                    ? () async {
+                        // Captura o Navigator antes do await
+                        final navigator = Navigator.of(context);
+                        await _storageService.saveUserConsent();
+                        if (!mounted) return;
                         // Navega para Home
-                        Navigator.of(context).pushNamedAndRemoveUntil('/home', (route) => false);
+                        navigator.pushNamedAndRemoveUntil('/home', (route) => false);
                       }
-                    }
-                  : null,
+                    : null,
               child: const Text('Entendi e Concordo', style: TextStyle(color: Colors.white, fontSize: 16)),
             ),
           ],

@@ -26,7 +26,7 @@ class HomeScreen extends StatelessWidget {
               Container(
                 padding: const EdgeInsets.all(20),
                 decoration: BoxDecoration(
-                  color: AppColors.emerald.withOpacity(0.1),
+                    color: AppColors.emerald.withAlpha((0.1 * 255).toInt()),
                   borderRadius: BorderRadius.circular(16),
                 ),
                 child: Column(
@@ -119,7 +119,7 @@ class HomeScreen extends StatelessWidget {
           borderRadius: BorderRadius.circular(16),
           boxShadow: [
             BoxShadow(
-              color: Colors.black.withOpacity(0.05),
+                color: Colors.black.withAlpha((0.05 * 255).toInt()),
               blurRadius: 10,
               offset: const Offset(0, 4),
             ),
@@ -131,7 +131,7 @@ class HomeScreen extends StatelessWidget {
             Container(
               padding: const EdgeInsets.all(16),
               decoration: BoxDecoration(
-                color: color.withOpacity(0.1),
+                 color: color.withAlpha((0.1 * 255).toInt()),
                 shape: BoxShape.circle,
               ),
               child: Icon(icon, size: 32, color: color),
