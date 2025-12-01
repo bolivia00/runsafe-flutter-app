@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:runsafe/features/goals/domain/entities/weekly_goal.dart';
 import 'package:runsafe/features/goals/presentation/widgets/weekly_goal_list_widget.dart';
+import 'package:provider/provider.dart';
+import 'package:runsafe/features/goals/presentation/providers/weekly_goals_provider.dart';
 
 /// Página com paginação para listar metas semanais
 class WeeklyGoalListPageWithPagination extends StatefulWidget {
@@ -62,9 +64,50 @@ class _WeeklyGoalListPageWithPaginationState
   }
 
   void _handleAddWeeklyGoal() {
-    // Implementar navegação ou modal para adicionar meta
-    ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(content: Text('Abrir formulário de adição de meta')),
+    final targetController = TextEditingController();
+    showDialog(
+      context: context,
+      builder: (dialogContext) => AlertDialog(
+        title: const Text('Nova Meta Semanal'),
+        content: TextField(
+          controller: targetController,
+          keyboardType: const TextInputType.numberWithOptions(decimal: true),
+          decoration: const InputDecoration(
+            labelText: 'Meta (km)',
+            hintText: 'Ex: 10.5',
+            border: OutlineInputBorder(),
+          ),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(dialogContext),
+            child: const Text('Cancelar'),
+          ),
+          ElevatedButton(
+            onPressed: () async {
+              final target = double.tryParse(targetController.text);
+              if (target != null && target > 0) {
+                final goal = WeeklyGoal(
+                  userId: 'default-user', // mantém consistente com carregamento inicial
+                  targetKm: target,
+                );
+                // Captura Provider e Navigator antes do await para evitar warning
+                final provider = context.read<WeeklyGoalsProvider>();
+                final navigator = Navigator.of(context);
+                await provider.addGoal(goal);
+                navigator.pop();
+              } else {
+                ScaffoldMessenger.of(dialogContext).showSnackBar(
+                  const SnackBar(
+                    content: Text('Digite uma meta válida (maior que 0)'),
+                  ),
+                );
+              }
+            },
+            child: const Text('Criar'),
+          ),
+        ],
+      ),
     );
   }
 

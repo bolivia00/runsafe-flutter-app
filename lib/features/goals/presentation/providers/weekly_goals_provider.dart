@@ -24,33 +24,46 @@ class WeeklyGoalsProvider extends ChangeNotifier {
   bool get isEmpty => _items.isEmpty;
   int get count => _items.length;
 
-  /// Carrega goals de um usuário (usa loadFromCache para render rápido)
+  /// Carrega goals de um usuário: primeiro do cache, depois sincroniza bidirecional (push + pull)
   Future<void> load(String userId) async {
+    if (_loading) return;
+    
     _loading = true;
     _error = null;
     _currentUserId = userId;
     notifyListeners();
 
     try {
-      // Primeiro carrega do cache (rápido)
+      // Primeiro carrega do cache (responsividade)
+      if (kDebugMode) {
+        print('[WeeklyGoalsProvider] Carregando do cache...');
+      }
       _items = await _repository.loadFromCache();
-      notifyListeners();
+      notifyListeners(); // Atualiza UI imediatamente
       
-      // Depois sincroniza com servidor (se implementado)
+      // Sync bidirecional: SEMPRE executa (push + pull)
+      if (kDebugMode) {
+        print('[WeeklyGoalsProvider] Iniciando sync bidirecional...');
+      }
       final changesCount = await _repository.syncFromServer();
+      _items = await _repository.listAll();
       
-      // Se houve mudanças, recarrega
-      if (changesCount > 0) {
-        _items = await _repository.listAll();
+      if (kDebugMode) {
+        print('[WeeklyGoalsProvider] Sync concluído: ${_items.length} metas totais ($changesCount mudanças)');
       }
       
       _error = null;
     } catch (e) {
       _error = e.toString();
       _items = [];
+      if (kDebugMode) {
+        print('[WeeklyGoalsProvider] Erro ao carregar: $e');
+      }
     } finally {
       _loading = false;
-      notifyListeners();
+      if (mounted) {
+        notifyListeners();
+      }
     }
   }
 
@@ -219,4 +232,40 @@ class WeeklyGoalsProvider extends ChangeNotifier {
     _error = null;
     notifyListeners();
   }
+
+  /// Sincroniza agora (chamado pelo pull-to-refresh)
+  Future<void> syncNow() async {
+    if (_loading) return;
+
+    _loading = true;
+    _error = null;
+    notifyListeners();
+
+    try {
+      if (kDebugMode) {
+        print('[WeeklyGoalsProvider] Sync manual iniciado');
+      }
+      final changesCount = await _repository.syncFromServer();
+      _items = await _repository.listAll();
+      
+      if (kDebugMode) {
+        print('[WeeklyGoalsProvider] Sync manual concluído: ${_items.length} metas ($changesCount mudanças)');
+      }
+      
+      _error = null;
+    } catch (e) {
+      _error = e.toString();
+      if (kDebugMode) {
+        print('[WeeklyGoalsProvider] Erro ao sincronizar: $e');
+      }
+    } finally {
+      _loading = false;
+      if (mounted) {
+        notifyListeners();
+      }
+    }
+  }
+
+  /// Método auxiliar para verificar se o provider ainda está montado
+  bool get mounted => hasListeners;
 }

@@ -65,21 +65,28 @@ class _WeeklyGoalsPageState extends State<WeeklyGoalsPage> {
           }
 
           if (provider.isEmpty) {
-            return Center(
-              child: Column(
-                mainAxisAlignment: MainAxisAlignment.center,
+            return RefreshIndicator(
+              onRefresh: () async {
+                if (mounted) {
+                  await provider.syncNow();
+                }
+              },
+              child: ListView(
+                physics: const AlwaysScrollableScrollPhysics(),
                 children: [
-                  const Icon(Icons.flag_outlined, size: 64, color: Colors.grey),
-                  const SizedBox(height: 16),
-                  const Text(
-                    'Nenhuma meta cadastrada',
-                    style: TextStyle(fontSize: 18, color: Colors.grey),
-                  ),
-                  const SizedBox(height: 16),
-                  ElevatedButton.icon(
-                    onPressed: () => _showAddGoalDialog(context),
-                    icon: const Icon(Icons.add),
-                    label: const Text('Criar primeira meta'),
+                  SizedBox(height: MediaQuery.of(context).size.height * 0.3),
+                  const Center(
+                    child: Column(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        Icon(Icons.flag_outlined, size: 64, color: Colors.grey),
+                        SizedBox(height: 16),
+                        Text(
+                          'Nenhuma meta cadastrada',
+                          style: TextStyle(fontSize: 18, color: Colors.grey),
+                        ),
+                      ],
+                    ),
                   ),
                 ],
               ),
@@ -87,8 +94,13 @@ class _WeeklyGoalsPageState extends State<WeeklyGoalsPage> {
           }
 
           return RefreshIndicator(
-            onRefresh: () => provider.load(widget.userId),
+            onRefresh: () async {
+              if (mounted) {
+                await provider.syncNow();
+              }
+            },
             child: ListView.builder(
+              physics: const AlwaysScrollableScrollPhysics(),
               itemCount: provider.count,
               padding: const EdgeInsets.all(16),
               itemBuilder: (context, index) {

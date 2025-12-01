@@ -38,14 +38,4 @@ class SafetyAlertDto {
       'updated_at': updatedAt,
     };
   }
-  
-  Map<String, dynamic> toSupabaseJson() {
-    return {
-      'description': description,
-      'type': type,
-      'severity': severity,
-      'created_at': createdAt,
-      'updated_at': DateTime.now().toIso8601String(), 
-    };
-  }
 }

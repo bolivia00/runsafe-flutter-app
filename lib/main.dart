@@ -3,10 +3,24 @@ import 'package:provider/provider.dart';
 import 'package:supabase_flutter/supabase_flutter.dart'; // <-- ADICIONADO
 
 import 'package:runsafe/core/services/storage_service.dart';
+import 'package:runsafe/core/services/safety_alerts_local_dao.dart';
+import 'package:runsafe/core/services/running_routes_local_dao.dart';
+import 'package:runsafe/core/services/waypoints_local_dao.dart';
 import 'package:runsafe/features/goals/data/datasources/weekly_goals_local_dao.dart';
 import 'package:runsafe/features/goals/data/repositories/weekly_goals_repository_impl.dart';
 import 'package:runsafe/features/goals/presentation/providers/weekly_goals_provider.dart';
-import 'package:runsafe/features/alerts/data/repositories/safety_alert_repository.dart';
+import 'package:runsafe/features/alerts/infrastructure/remote/safety_alerts_remote_datasource_supabase.dart';
+import 'package:runsafe/features/alerts/infrastructure/repositories/safety_alerts_repository_impl_remote.dart';
+import 'package:runsafe/features/alerts/presentation/providers/safety_alerts_provider.dart';
+import 'package:runsafe/features/alerts/data/mappers/safety_alert_mapper.dart';
+import 'package:runsafe/features/routes/infrastructure/remote/running_routes_remote_datasource_supabase.dart';
+import 'package:runsafe/features/routes/infrastructure/repositories/running_routes_repository_impl_remote.dart';
+import 'package:runsafe/features/routes/presentation/providers/running_routes_provider.dart';
+import 'package:runsafe/features/routes/data/mappers/running_route_mapper.dart';
+import 'package:runsafe/features/routes/infrastructure/remote/waypoints_remote_datasource_supabase.dart';
+import 'package:runsafe/features/routes/infrastructure/repositories/waypoints_repository_impl_remote.dart';
+import 'package:runsafe/features/routes/presentation/providers/waypoints_provider.dart';
+import 'package:runsafe/features/routes/data/mappers/waypoint_mapper.dart';
 import 'package:runsafe/features/routes/data/repositories/waypoint_repository.dart';
 import 'package:runsafe/features/routes/data/repositories/running_route_repository.dart';
 import 'package:runsafe/features/profile/data/repositories/profile_repository.dart';
@@ -46,13 +60,41 @@ Future<void> main() async {
           )..load('default-user'),
         ),
         ChangeNotifierProvider(
-          create: (context) => SafetyAlertRepository()..loadAlerts(),
+          create: (context) => SafetyAlertsProvider(
+            SafetyAlertsRepositoryImplRemote(
+              SafetyAlertsLocalDaoSharedPrefs(),
+              SupabaseSafetyAlertsRemoteDatasource(Supabase.instance.client),
+              SafetyAlertMapper(), // Injeta mapper para conversão DTO ↔ Entity
+            ),
+          )..loadAlerts(),
         ),
+        // Antigo repository - mantido para compatibilidade com formulários
         ChangeNotifierProvider(
           create: (context) => WaypointRepository()..loadWaypoints(),
         ),
+        // Novo provider com sincronização remota
+        ChangeNotifierProvider(
+          create: (context) => WaypointsProvider(
+            WaypointsRepositoryImplRemote(
+              WaypointsLocalDaoSharedPrefs(),
+              SupabaseWaypointsRemoteDatasource(Supabase.instance.client),
+              WaypointMapper(), // Injeta mapper para conversão DTO ↔ Entity
+            ),
+          )..loadWaypoints(),
+        ),
+        // Antigo repository - mantido para compatibilidade com formulários
         ChangeNotifierProvider(
           create: (context) => RunningRouteRepository()..loadRoutes(),
+        ),
+        // Novo provider com sincronização remota
+        ChangeNotifierProvider(
+          create: (context) => RunningRoutesProvider(
+            RunningRoutesRepositoryImplRemote(
+              RunningRoutesLocalDaoSharedPrefs(),
+              SupabaseRunningRoutesRemoteDatasource(Supabase.instance.client),
+              RunningRouteMapper(WaypointMapper()),
+            ),
+          )..loadRoutes(),
         ),
       ],
       child: const RunSafeApp(),

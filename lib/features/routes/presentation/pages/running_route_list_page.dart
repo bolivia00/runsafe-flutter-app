@@ -1,8 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
-import 'package:runsafe/features/routes/data/repositories/running_route_repository.dart';
 import 'package:runsafe/features/routes/domain/entities/running_route.dart';
 import 'package:runsafe/features/routes/presentation/widgets/running_route_form_dialog.dart';
+import 'package:runsafe/features/routes/data/repositories/running_route_repository.dart';
+import 'package:runsafe/features/routes/presentation/providers/running_routes_provider.dart';
 
 class RunningRouteListPage extends StatefulWidget {
   const RunningRouteListPage({super.key});
@@ -33,6 +34,7 @@ class _RunningRouteListPageState extends State<RunningRouteListPage>
     );
 
     WidgetsBinding.instance.addPostFrameCallback((_) {
+      // Usa o antigo repository para compatibilidade com o formulário
       if (mounted && context.read<RunningRouteRepository>().routes.isEmpty && _showTip) {
         _fabController.repeat(reverse: true);
       }
@@ -92,9 +94,9 @@ class _RunningRouteListPageState extends State<RunningRouteListPage>
           SafeArea(
             child: Padding(
               padding: const EdgeInsets.all(16.0),
-              child: Consumer<RunningRouteRepository>(
-                builder: (context, repository, child) {
-                  return _buildBody(context, repository.routes);
+              child: Consumer<RunningRoutesProvider>(
+                builder: (context, provider, child) {
+                  return _buildBodyWithRefresh(context, provider);
                 },
               ),
             ),
@@ -119,33 +121,61 @@ class _RunningRouteListPageState extends State<RunningRouteListPage>
     );
   }
 
-  Widget _buildBody(BuildContext context, List<RunningRoute> routes) {
-    if (routes.isEmpty) { 
-      return const Center(
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Icon(Icons.route_outlined, size: 72, color: Colors.grey),
-            SizedBox(height: 16),
-            Text(
-              'Nenhuma rota cadastrada.',
-              textAlign: TextAlign.center,
-              style: TextStyle(fontSize: 16),
-            ),
-            SizedBox(height: 8),
-            Text(
-              'Use o botão "+" abaixo para criar uma nova rota.',
-              textAlign: TextAlign.center,
-              style: TextStyle(color: Colors.grey),
-            ),
-          ],
-        ),
-      );
+  /// Corpo com RefreshIndicator para sincronização remota
+  Widget _buildBodyWithRefresh(BuildContext context, RunningRoutesProvider provider) {
+    // Mostra indicador de carregamento se estiver carregando e não há dados
+    if (provider.isLoading && provider.routes.isEmpty) {
+      return const Center(child: CircularProgressIndicator());
     }
 
+    return RefreshIndicator(
+      onRefresh: () async {
+        if (mounted) {
+          await provider.syncNow();
+        }
+      },
+      child: provider.routes.isEmpty
+          ? _buildEmptyList()
+          : _buildRoutesList(context, provider.routes),
+    );
+  }
+
+  /// Lista vazia com scroll habilitado para pull-to-refresh
+  Widget _buildEmptyList() {
+    return ListView(
+      physics: const AlwaysScrollableScrollPhysics(),
+      children: const [
+        SizedBox(height: 100),
+        Center(
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Icon(Icons.route_outlined, size: 72, color: Colors.grey),
+              SizedBox(height: 16),
+              Text(
+                'Nenhuma rota cadastrada.',
+                textAlign: TextAlign.center,
+                style: TextStyle(fontSize: 16),
+              ),
+              SizedBox(height: 8),
+              Text(
+                'Use o botão "+" abaixo para criar uma nova rota.',
+                textAlign: TextAlign.center,
+                style: TextStyle(color: Colors.grey),
+              ),
+            ],
+          ),
+        ),
+      ],
+    );
+  }
+
+  /// Lista de rotas com dismissible
+  Widget _buildRoutesList(BuildContext context, List<RunningRoute> routes) {
     return ListView.separated(
+      physics: const AlwaysScrollableScrollPhysics(),
       itemCount: routes.length,
-      separatorBuilder: (context, index) => const Divider(height: 1), 
+      separatorBuilder: (context, index) => const Divider(height: 1),
       itemBuilder: (context, index) {
         final route = routes[index];
         return Dismissible(

@@ -3,6 +3,7 @@ import 'package:provider/provider.dart';
 import 'package:runsafe/features/routes/data/repositories/waypoint_repository.dart';
 import 'package:runsafe/features/routes/domain/entities/waypoint.dart';
 import 'package:runsafe/features/routes/presentation/widgets/waypoint_form_dialog.dart';
+import 'package:runsafe/features/routes/presentation/providers/waypoints_provider.dart';
 
 class WaypointListPage extends StatefulWidget {
   const WaypointListPage({super.key});
@@ -33,6 +34,7 @@ class _WaypointListPageState extends State<WaypointListPage>
     );
 
     WidgetsBinding.instance.addPostFrameCallback((_) {
+      // Usa o antigo repository para compatibilidade com o formulário
       if (mounted && context.read<WaypointRepository>().waypoints.isEmpty && _showTip) {
         _fabController.repeat(reverse: true);
       }
@@ -92,9 +94,9 @@ class _WaypointListPageState extends State<WaypointListPage>
           SafeArea(
             child: Padding(
               padding: const EdgeInsets.all(16.0),
-              child: Consumer<WaypointRepository>(
-                builder: (context, repository, child) {
-                  return _buildBody(context, repository.waypoints);
+              child: Consumer<WaypointsProvider>(
+                builder: (context, provider, child) {
+                  return _buildBodyWithRefresh(context, provider);
                 },
               ),
             ),
@@ -119,33 +121,61 @@ class _WaypointListPageState extends State<WaypointListPage>
     );
   }
 
-  Widget _buildBody(BuildContext context, List<Waypoint> waypoints) {
-    if (waypoints.isEmpty) { 
-      return const Center(
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Icon(Icons.map_outlined, size: 72, color: Colors.grey),
-            SizedBox(height: 16),
-            Text(
-              'Nenhum ponto de rota cadastrado.',
-              textAlign: TextAlign.center,
-              style: TextStyle(fontSize: 16),
-            ),
-            SizedBox(height: 8),
-            Text(
-              'Use o botão "+" abaixo para adicionar o primeiro ponto.',
-              textAlign: TextAlign.center,
-              style: TextStyle(color: Colors.grey),
-            ),
-          ],
-        ),
-      );
+  /// Corpo com RefreshIndicator para sincronização remota
+  Widget _buildBodyWithRefresh(BuildContext context, WaypointsProvider provider) {
+    // Mostra indicador de carregamento se estiver carregando e não há dados
+    if (provider.isLoading && provider.waypoints.isEmpty) {
+      return const Center(child: CircularProgressIndicator());
     }
 
+    return RefreshIndicator(
+      onRefresh: () async {
+        if (mounted) {
+          await provider.syncNow();
+        }
+      },
+      child: provider.waypoints.isEmpty
+          ? _buildEmptyList()
+          : _buildWaypointsList(context, provider.waypoints),
+    );
+  }
+
+  /// Lista vazia com scroll habilitado para pull-to-refresh
+  Widget _buildEmptyList() {
+    return ListView(
+      physics: const AlwaysScrollableScrollPhysics(),
+      children: const [
+        SizedBox(height: 100),
+        Center(
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Icon(Icons.map_outlined, size: 72, color: Colors.grey),
+              SizedBox(height: 16),
+              Text(
+                'Nenhum ponto de rota cadastrado.',
+                textAlign: TextAlign.center,
+                style: TextStyle(fontSize: 16),
+              ),
+              SizedBox(height: 8),
+              Text(
+                'Use o botão "+" abaixo para adicionar o primeiro ponto.',
+                textAlign: TextAlign.center,
+                style: TextStyle(color: Colors.grey),
+              ),
+            ],
+          ),
+        ),
+      ],
+    );
+  }
+
+  /// Lista de waypoints com dismissible
+  Widget _buildWaypointsList(BuildContext context, List<Waypoint> waypoints) {
     return ListView.separated(
+      physics: const AlwaysScrollableScrollPhysics(),
       itemCount: waypoints.length,
-      separatorBuilder: (context, index) => const Divider(height: 1), 
+      separatorBuilder: (context, index) => const Divider(height: 1),
       itemBuilder: (context, index) {
         final waypoint = waypoints[index];
         return Dismissible(

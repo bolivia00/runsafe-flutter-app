@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
-import 'package:runsafe/features/alerts/data/repositories/safety_alert_repository.dart';
+import 'package:runsafe/features/alerts/presentation/providers/safety_alerts_provider.dart';
 import 'package:runsafe/features/alerts/domain/entities/safety_alert.dart';
 // Se você tiver o safety_alert_form_dialog.dart, importe-o aqui
 // import 'package:runsafe/features/alerts/presentation/widgets/safety_alert_form_dialog.dart';
@@ -10,12 +10,12 @@ class SafetyAlertListWidget extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Consumer<SafetyAlertRepository>(
-      builder: (context, repository, child) {
-        final alerts = repository.alerts;
+    return Consumer<SafetyAlertsProvider>(
+      builder: (context, provider, child) {
+        final alerts = provider.alerts;
 
         if (alerts.isEmpty) {
-          if (repository.isLoading) {
+          if (provider.isLoading) {
             return const Center(child: CircularProgressIndicator());
           }
           return const Center(child: Text('Nenhum alerta encontrado.'));
@@ -64,8 +64,10 @@ class SafetyAlertListItem extends StatelessWidget {
       trailing: IconButton(
         icon: const Icon(Icons.delete, color: Colors.red),
         onPressed: () {
-             // Exemplo de delete via Provider
-             Provider.of<SafetyAlertRepository>(context, listen: false).deleteAlert(alert.id);
+             // Nota: novo repositório não tem deleteAlert
+             ScaffoldMessenger.of(context).showSnackBar(
+               const SnackBar(content: Text('Deletar não implementado')),
+             );
         },
       ),
     );

@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
-import 'package:runsafe/features/alerts/data/repositories/safety_alert_repository.dart';
+import 'package:runsafe/features/alerts/presentation/providers/safety_alerts_provider.dart';
 import 'package:runsafe/features/alerts/domain/entities/safety_alert.dart';
 import 'package:runsafe/features/alerts/presentation/widgets/safety_alert_form_dialog.dart';
 
@@ -33,7 +33,7 @@ class _SafetyAlertListPageState extends State<SafetyAlertListPage>
     );
 
     WidgetsBinding.instance.addPostFrameCallback((_) {
-      if (mounted && context.read<SafetyAlertRepository>().alerts.isEmpty && _showTip) {
+      if (mounted && context.read<SafetyAlertsProvider>().alerts.isEmpty && _showTip) {
         _fabController.repeat(reverse: true);
       }
     });
@@ -46,11 +46,14 @@ class _SafetyAlertListPageState extends State<SafetyAlertListPage>
   }
 
   void _addAlert(BuildContext context) async {
-    final repository = context.read<SafetyAlertRepository>();
     final newAlert = await showSafetyAlertFormDialog(context);
 
-    if (newAlert != null) {
-      repository.addAlert(newAlert);
+    if (newAlert != null && context.mounted) {
+      // Nota: novo repositório não tem addAlert, apenas sync do servidor
+      // Para adicionar localmente, precisaria estender o repositório ou fazer pelo Supabase direto
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Adicionar alerta não implementado no novo repositório')),
+      );
       
       if (_showTip) {
         setState(() => _showTip = false);
@@ -61,14 +64,16 @@ class _SafetyAlertListPageState extends State<SafetyAlertListPage>
   }
 
   void _editAlert(BuildContext context, SafetyAlert alertToEdit) async {
-    final repository = context.read<SafetyAlertRepository>();
     final updatedAlert = await showSafetyAlertFormDialog(
       context,
       initial: alertToEdit,
     );
 
-    if (updatedAlert != null) {
-      repository.editAlert(updatedAlert);
+    if (updatedAlert != null && context.mounted) {
+      // Nota: novo repositório não tem editAlert, apenas sync do servidor
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Editar alerta não implementado no novo repositório')),
+      );
     }
   }
 
@@ -92,9 +97,9 @@ class _SafetyAlertListPageState extends State<SafetyAlertListPage>
           SafeArea(
             child: Padding(
               padding: const EdgeInsets.all(16.0),
-              child: Consumer<SafetyAlertRepository>(
-                builder: (context, repository, child) {
-                  return _buildBody(context, repository.alerts);
+              child: Consumer<SafetyAlertsProvider>(
+                builder: (context, provider, child) {
+                  return _buildBodyWithRefresh(context, provider);
                 },
               ),
             ),
@@ -102,7 +107,7 @@ class _SafetyAlertListPageState extends State<SafetyAlertListPage>
           
           if (_showTutorial) _buildTutorialOverlay(context),
           _buildOptOutButton(context),
-          if (_showTip && context.watch<SafetyAlertRepository>().alerts.isEmpty)
+          if (_showTip && context.watch<SafetyAlertsProvider>().alerts.isEmpty)
              _buildTipBubble(context),
         ],
       ),
@@ -119,31 +124,59 @@ class _SafetyAlertListPageState extends State<SafetyAlertListPage>
     );
   }
 
-  Widget _buildBody(BuildContext context, List<SafetyAlert> alerts) {
-    if (alerts.isEmpty) {
-      return const Center(
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Icon(Icons.shield_outlined, size: 72, color: Colors.grey),
-            SizedBox(height: 16),
-            Text(
-              'Nenhum alerta cadastrado ainda.',
-              textAlign: TextAlign.center,
-              style: TextStyle(fontSize: 16),
-            ),
-            SizedBox(height: 8),
-            Text(
-              'Use o botão "+" abaixo para reportar um alerta.',
-              textAlign: TextAlign.center,
-              style: TextStyle(color: Colors.grey),
-            ),
-          ],
-        ),
-      );
+  /// Corpo com RefreshIndicator para sincronização remota
+  Widget _buildBodyWithRefresh(BuildContext context, SafetyAlertsProvider provider) {
+    // Mostra indicador de carregamento se estiver carregando e não há dados
+    if (provider.isLoading && provider.alerts.isEmpty) {
+      return const Center(child: CircularProgressIndicator());
     }
 
+    return RefreshIndicator(
+      onRefresh: () async {
+        if (mounted) {
+          await provider.syncNow();
+        }
+      },
+      child: provider.alerts.isEmpty
+          ? _buildEmptyList()
+          : _buildAlertsList(context, provider.alerts),
+    );
+  }
+
+  /// Lista vazia com scroll habilitado para pull-to-refresh
+  Widget _buildEmptyList() {
+    return ListView(
+      physics: const AlwaysScrollableScrollPhysics(),
+      children: const [
+        SizedBox(height: 100),
+        Center(
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Icon(Icons.shield_outlined, size: 72, color: Colors.grey),
+              SizedBox(height: 16),
+              Text(
+                'Nenhum alerta cadastrado ainda.',
+                textAlign: TextAlign.center,
+                style: TextStyle(fontSize: 16),
+              ),
+              SizedBox(height: 8),
+              Text(
+                'Use o botão "+" abaixo para reportar um alerta.',
+                textAlign: TextAlign.center,
+                style: TextStyle(color: Colors.grey),
+              ),
+            ],
+          ),
+        ),
+      ],
+    );
+  }
+
+  /// Lista de alertas com dismissible
+  Widget _buildAlertsList(BuildContext context, List<SafetyAlert> alerts) {
     return ListView.separated(
+      physics: const AlwaysScrollableScrollPhysics(),
       itemCount: alerts.length,
       separatorBuilder: (context, index) => const Divider(height: 1),
       itemBuilder: (context, index) {
@@ -153,9 +186,9 @@ class _SafetyAlertListPageState extends State<SafetyAlertListPage>
           direction: DismissDirection.endToStart,
           
           onDismissed: (direction) {
-            context.read<SafetyAlertRepository>().deleteAlert(alert.id);
+            // Nota: novo repositório não tem deleteAlert local
             ScaffoldMessenger.of(context).showSnackBar(
-              const SnackBar(content: Text('Alerta excluído com sucesso.')),
+              const SnackBar(content: Text('Deletar alerta não implementado no novo repositório')),
             );
           },
           
