@@ -182,4 +182,27 @@ class SupabaseSafetyAlertsRemoteDatasource {
       return 0; // Melhor esforço: erro não bloqueia pull
     }
   }
+  
+  /// Deleta um alerta pelo ID
+  Future<void> deleteSafetyAlert(String id) async {
+    try {
+      if (kDebugMode) {
+        print('[SupabaseSafetyAlertsRemoteDatasource] Deletando alerta: $id');
+      }
+      
+      await _client
+        .from(_table)
+        .delete()
+        .eq('id', id);
+      
+      if (kDebugMode) {
+        print('[SupabaseSafetyAlertsRemoteDatasource] Alerta deletado com sucesso');
+      }
+    } catch (e) {
+      if (kDebugMode) {
+        print('[SupabaseSafetyAlertsRemoteDatasource] Erro ao deletar alerta: $e');
+      }
+      rethrow;
+    }
+  }
 }

@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
-import 'package:runsafe/features/routes/data/repositories/waypoint_repository.dart';
 import 'package:runsafe/features/routes/domain/entities/waypoint.dart';
 import 'package:runsafe/features/routes/presentation/widgets/waypoint_form_dialog.dart';
 import 'package:runsafe/features/routes/presentation/providers/waypoints_provider.dart';
@@ -34,8 +33,11 @@ class _WaypointListPageState extends State<WaypointListPage>
     );
 
     WidgetsBinding.instance.addPostFrameCallback((_) {
-      // Usa o antigo repository para compatibilidade com o formulário
-      if (mounted && context.read<WaypointRepository>().waypoints.isEmpty && _showTip) {
+      // Carrega waypoints do provider remoto
+      final provider = context.read<WaypointsProvider>();
+      provider.loadWaypoints();
+      
+      if (mounted && provider.waypoints.isEmpty && _showTip) {
         _fabController.repeat(reverse: true);
       }
     });
@@ -48,29 +50,55 @@ class _WaypointListPageState extends State<WaypointListPage>
   }
 
   void _addWaypoint(BuildContext context) async {
-    final repository = context.read<WaypointRepository>();
+    final provider = context.read<WaypointsProvider>();
     final newWaypoint = await showWaypointFormDialog(context);
 
     if (newWaypoint != null) {
-      repository.addWaypoint(newWaypoint);
-      
-      if (_showTip) {
-        setState(() => _showTip = false);
-        _fabController.stop();
-        _fabController.reset();
+      try {
+        await provider.addWaypoint(newWaypoint);
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(content: Text('Waypoint adicionado com sucesso.')),
+          );
+        }
+        
+        if (_showTip) {
+          setState(() => _showTip = false);
+          _fabController.stop();
+          _fabController.reset();
+        }
+      } catch (e) {
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(content: Text('Erro ao adicionar waypoint: $e')),
+          );
+        }
       }
     }
   }
 
   void _editWaypoint(BuildContext context, Waypoint waypointToEdit) async {
-    final repository = context.read<WaypointRepository>();
+    final provider = context.read<WaypointsProvider>();
     final updatedWaypoint = await showWaypointFormDialog(
       context,
       initial: waypointToEdit, 
     );
 
     if (updatedWaypoint != null) {
-      repository.editWaypoint(updatedWaypoint);
+      try {
+        await provider.updateWaypoint(updatedWaypoint);
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(content: Text('Waypoint atualizado com sucesso.')),
+          );
+        }
+      } catch (e) {
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(content: Text('Erro ao atualizar waypoint: $e')),
+          );
+        }
+      }
     }
   }
 
@@ -104,7 +132,7 @@ class _WaypointListPageState extends State<WaypointListPage>
           
           if (_showTutorial) _buildTutorialOverlay(context),
           _buildOptOutButton(context),
-          if (_showTip && context.watch<WaypointRepository>().waypoints.isEmpty)
+          if (_showTip && context.watch<WaypointsProvider>().waypoints.isEmpty)
              _buildTipBubble(context),
         ],
       ),
@@ -182,11 +210,22 @@ class _WaypointListPageState extends State<WaypointListPage>
           key: Key(waypoint.timestamp.toIso8601String()),
           direction: DismissDirection.endToStart,
           
-          onDismissed: (direction) {
-            context.read<WaypointRepository>().deleteWaypoint(waypoint.timestamp);
-            ScaffoldMessenger.of(context).showSnackBar(
-              const SnackBar(content: Text('Ponto de rota excluído.')),
-            );
+          onDismissed: (direction) async {
+            final provider = context.read<WaypointsProvider>();
+            try {
+              await provider.deleteWaypoint(waypoint.timestamp.toIso8601String());
+              if (mounted) {
+                ScaffoldMessenger.of(context).showSnackBar(
+                  const SnackBar(content: Text('Ponto de rota excluído.')),
+                );
+              }
+            } catch (e) {
+              if (mounted) {
+                ScaffoldMessenger.of(context).showSnackBar(
+                  SnackBar(content: Text('Erro ao excluir waypoint: $e')),
+                );
+              }
+            }
           },
           
           background: Container(

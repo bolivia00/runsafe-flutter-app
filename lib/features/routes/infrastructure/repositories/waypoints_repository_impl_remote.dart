@@ -159,6 +159,52 @@ class WaypointsRepositoryImplRemote implements WaypointsRepository {
       updatedAt: DateTime.now().toUtc(),
     );
   }
+  
+  @override
+  Future<void> add(Waypoint waypoint) async {
+    final dto = _mapper.toDto(waypoint);
+    final existing = await _localDao.listAll();
+    final updated = [...existing, dto];
+    await _localDao.upsertAll(updated);
+    
+    if (kDebugMode) {
+      print('[WaypointsRepositoryImplRemote] Waypoint adicionado localmente: ${waypoint.timestamp.toIso8601String()}');
+    }
+  }
+  
+  @override
+  Future<void> update(Waypoint waypoint) async {
+    final dto = _mapper.toDto(waypoint);
+    final existing = await _localDao.listAll();
+    final updated = existing.where((d) => d.ts != waypoint.timestamp.toIso8601String()).toList()..add(dto);
+    await _localDao.upsertAll(updated);
+    
+    if (kDebugMode) {
+      print('[WaypointsRepositoryImplRemote] Waypoint atualizado localmente: ${waypoint.timestamp.toIso8601String()}');
+    }
+  }
+  
+  @override
+  Future<void> delete(String timestampIso) async {
+    // 1. Deletar do Supabase primeiro
+    try {
+      await _remote.deleteWaypoint(timestampIso);
+    } catch (e) {
+      if (kDebugMode) {
+        print('[WaypointsRepositoryImplRemote] Erro ao deletar no Supabase: $e');
+      }
+      rethrow;
+    }
+    
+    // 2. Deletar do cache local
+    final existing = await _localDao.listAll();
+    final updated = existing.where((d) => d.ts != timestampIso).toList();
+    await _localDao.upsertAll(updated);
+    
+    if (kDebugMode) {
+      print('[WaypointsRepositoryImplRemote] Waypoint removido localmente e do Supabase: $timestampIso');
+    }
+  }
 }
 
 // Bloco de uso (exemplo):

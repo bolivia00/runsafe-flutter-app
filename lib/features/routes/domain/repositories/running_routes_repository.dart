@@ -40,6 +40,18 @@ abstract class RunningRoutesRepository {
   // Retorna null se não encontrado
   /// Busca rota por ID (retorna null se não encontrado)
   Future<RunningRoute?> getById(String id);
+  
+  // CRUD local: adiciona rota ao cache e agenda push no próximo sync
+  /// Adiciona nova rota ao cache local
+  Future<void> add(RunningRoute route);
+  
+  // CRUD local: atualiza rota no cache e agenda push no próximo sync
+  /// Atualiza rota existente no cache local
+  Future<void> update(RunningRoute route);
+  
+  // CRUD local: remove rota do cache e agenda push no próximo sync
+  /// Remove rota do cache local
+  Future<void> delete(String id);
 }
 
 /*

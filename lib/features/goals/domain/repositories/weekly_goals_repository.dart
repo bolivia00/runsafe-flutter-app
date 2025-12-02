@@ -39,6 +39,18 @@ abstract class WeeklyGoalsRepository {
   // Retorna null se não encontrado
   /// Busca meta por ID (retorna null se não encontrado)
   Future<WeeklyGoal?> getById(String id);
+  
+  // CRUD local: adiciona meta ao cache e agenda push no próximo sync
+  /// Adiciona nova meta ao cache local
+  Future<void> add(WeeklyGoal goal);
+  
+  // CRUD local: atualiza meta no cache e agenda push no próximo sync
+  /// Atualiza meta existente no cache local
+  Future<void> update(WeeklyGoal goal);
+  
+  // CRUD local: remove meta do cache e agenda push no próximo sync
+  /// Remove meta do cache local
+  Future<void> delete(String id);
 }
 
 /*

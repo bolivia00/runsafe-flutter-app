@@ -127,6 +127,29 @@ class SupabaseWeeklyGoalsRemoteDatasource {
       return 0; // Melhor esforço: erro não bloqueia pull
     }
   }
+  
+  /// Deleta uma meta pelo ID
+  Future<void> deleteWeeklyGoal(String id) async {
+    try {
+      if (kDebugMode) {
+        print('[SupabaseWeeklyGoalsRemoteDatasource] Deletando meta: $id');
+      }
+      
+      await _client
+        .from(_table)
+        .delete()
+        .eq('id', id);
+      
+      if (kDebugMode) {
+        print('[SupabaseWeeklyGoalsRemoteDatasource] Meta deletada com sucesso');
+      }
+    } catch (e) {
+      if (kDebugMode) {
+        print('[SupabaseWeeklyGoalsRemoteDatasource] Erro ao deletar meta: $e');
+      }
+      rethrow;
+    }
+  }
 
   /// Converte row do Supabase para WeeklyGoalModel
   /// Mapeia user_id -> userId, target_km -> targetKm, current_km -> currentKm

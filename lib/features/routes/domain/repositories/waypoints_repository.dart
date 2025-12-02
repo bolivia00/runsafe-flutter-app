@@ -41,6 +41,18 @@ abstract class WaypointsRepository {
   // Retorna null se não encontrado
   /// Busca waypoint por ID (retorna null se não encontrado)
   Future<Waypoint?> getById(String id);
+  
+  // CRUD local: adiciona waypoint ao cache e agenda push no próximo sync
+  /// Adiciona novo waypoint ao cache local
+  Future<void> add(Waypoint waypoint);
+  
+  // CRUD local: atualiza waypoint no cache e agenda push no próximo sync
+  /// Atualiza waypoint existente no cache local
+  Future<void> update(Waypoint waypoint);
+  
+  // CRUD local: remove waypoint do cache e agenda push no próximo sync
+  /// Remove waypoint do cache local (filtra por timestamp)
+  Future<void> delete(String timestampIso);
 }
 
 /*

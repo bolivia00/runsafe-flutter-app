@@ -39,6 +39,18 @@ abstract class SafetyAlertsRepository {
   // Retorna null se não encontrado
   /// Busca alerta por ID (retorna null se não encontrado)
   Future<SafetyAlert?> getById(String id);
+  
+  // CRUD local: adiciona alerta ao cache e agenda push no próximo sync
+  /// Adiciona novo alerta ao cache local
+  Future<void> add(SafetyAlert alert);
+  
+  // CRUD local: atualiza alerta no cache e agenda push no próximo sync
+  /// Atualiza alerta existente no cache local
+  Future<void> update(SafetyAlert alert);
+  
+  // CRUD local: remove alerta do cache e agenda push no próximo sync
+  /// Remove alerta do cache local
+  Future<void> delete(String id);
 }
 
 /*

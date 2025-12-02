@@ -2,7 +2,6 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:runsafe/features/routes/domain/entities/running_route.dart';
 import 'package:runsafe/features/routes/presentation/widgets/running_route_form_dialog.dart';
-import 'package:runsafe/features/routes/data/repositories/running_route_repository.dart';
 import 'package:runsafe/features/routes/presentation/providers/running_routes_provider.dart';
 
 class RunningRouteListPage extends StatefulWidget {
@@ -34,8 +33,8 @@ class _RunningRouteListPageState extends State<RunningRouteListPage>
     );
 
     WidgetsBinding.instance.addPostFrameCallback((_) {
-      // Usa o antigo repository para compatibilidade com o formulário
-      if (mounted && context.read<RunningRouteRepository>().routes.isEmpty && _showTip) {
+      // Verifica se precisa exibir animação do FAB
+      if (mounted && context.read<RunningRoutesProvider>().routes.isEmpty && _showTip) {
         _fabController.repeat(reverse: true);
       }
     });
@@ -48,11 +47,11 @@ class _RunningRouteListPageState extends State<RunningRouteListPage>
   }
 
   void _addRoute(BuildContext context) async {
-    final repository = context.read<RunningRouteRepository>();
+    final provider = context.read<RunningRoutesProvider>();
     final newRoute = await showRunningRouteFormDialog(context);
 
     if (newRoute != null) {
-      repository.addRoute(newRoute);
+      await provider.addRoute(newRoute);
       
       if (_showTip) {
         setState(() => _showTip = false);
@@ -63,14 +62,14 @@ class _RunningRouteListPageState extends State<RunningRouteListPage>
   }
 
   void _editRoute(BuildContext context, RunningRoute routeToEdit) async {
-    final repository = context.read<RunningRouteRepository>();
+    final provider = context.read<RunningRoutesProvider>();
     final updatedRoute = await showRunningRouteFormDialog(
       context,
       initial: routeToEdit, 
     );
 
     if (updatedRoute != null) {
-      repository.editRoute(updatedRoute);
+      await provider.updateRoute(updatedRoute);
     }
   }
 
@@ -104,7 +103,7 @@ class _RunningRouteListPageState extends State<RunningRouteListPage>
           
           if (_showTutorial) _buildTutorialOverlay(context),
           _buildOptOutButton(context),
-          if (_showTip && context.watch<RunningRouteRepository>().routes.isEmpty)
+          if (_showTip && context.watch<RunningRoutesProvider>().routes.isEmpty)
              _buildTipBubble(context),
         ],
       ),
@@ -182,11 +181,13 @@ class _RunningRouteListPageState extends State<RunningRouteListPage>
           key: Key(route.id),
           direction: DismissDirection.endToStart,
           
-          onDismissed: (direction) {
-            context.read<RunningRouteRepository>().deleteRoute(route.id);
-            ScaffoldMessenger.of(context).showSnackBar(
-              const SnackBar(content: Text('Rota excluída.')),
-            );
+          onDismissed: (direction) async {
+            await context.read<RunningRoutesProvider>().deleteRoute(route.id);
+            if (context.mounted) {
+              ScaffoldMessenger.of(context).showSnackBar(
+                const SnackBar(content: Text('Rota excluída.')),
+              );
+            }
           },
           
           background: Container(

@@ -165,4 +165,27 @@ class SupabaseWaypointsRemoteDatasource {
       return 0; // Melhor esforço: erro não bloqueia pull
     }
   }
+  
+  /// Deleta um waypoint pelo timestamp (PK)
+  Future<void> deleteWaypoint(String timestampIso) async {
+    try {
+      if (kDebugMode) {
+        print('[SupabaseWaypointsRemoteDatasource] Deletando waypoint: $timestampIso');
+      }
+      
+      await _client
+        .from(_table)
+        .delete()
+        .eq('timestamp', timestampIso);
+      
+      if (kDebugMode) {
+        print('[SupabaseWaypointsRemoteDatasource] Waypoint deletado com sucesso');
+      }
+    } catch (e) {
+      if (kDebugMode) {
+        print('[SupabaseWaypointsRemoteDatasource] Erro ao deletar waypoint: $e');
+      }
+      rethrow;
+    }
+  }
 }

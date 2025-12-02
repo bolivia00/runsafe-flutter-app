@@ -1,20 +1,17 @@
 import 'package:flutter/foundation.dart';
 import 'package:runsafe/features/goals/domain/entities/weekly_goal.dart';
 import 'package:runsafe/features/goals/domain/repositories/weekly_goals_repository.dart';
-import 'package:runsafe/features/goals/data/repositories/weekly_goals_repository_impl.dart';
 
 /// Provider para gerenciar estado dos WeeklyGoals
 class WeeklyGoalsProvider extends ChangeNotifier {
   final WeeklyGoalsRepository _repository;
-  final WeeklyGoalsRepositoryImpl? _repositoryImpl;
 
   List<WeeklyGoal> _items = [];
   bool _loading = false;
   String? _error;
   String? _currentUserId;
 
-  WeeklyGoalsProvider(this._repository) 
-      : _repositoryImpl = _repository is WeeklyGoalsRepositoryImpl ? _repository : null;
+  WeeklyGoalsProvider(this._repository);
 
   // Getters
   List<WeeklyGoal> get items => List.unmodifiable(_items);
@@ -70,12 +67,8 @@ class WeeklyGoalsProvider extends ChangeNotifier {
   /// Adiciona uma nova meta
   Future<void> addGoal(WeeklyGoal goal) async {
     try {
-      // Usa método auxiliar da implementação
-      if (_repositoryImpl != null) {
-        await _repositoryImpl!.add(goal);
-      } else {
-        throw Exception('Repositório não suporta operação de adição direta');
-      }
+      // Usa método da interface
+      await _repository.add(goal);
       
       // Atualiza lista local
       final index = _items.indexWhere((g) => g.id == goal.id);
@@ -115,12 +108,8 @@ class WeeklyGoalsProvider extends ChangeNotifier {
       final goal = _items[index];
       goal.addRun(km);
 
-      // Persiste mudança usando método auxiliar
-      if (_repositoryImpl != null) {
-        await _repositoryImpl!.add(goal);
-      } else {
-        throw Exception('Repositório não suporta operação de atualização direta');
-      }
+      // Persiste mudança usando método da interface
+      await _repository.update(goal);
       
       _error = null;
       notifyListeners();
@@ -134,12 +123,8 @@ class WeeklyGoalsProvider extends ChangeNotifier {
   /// Remove um goal
   Future<void> remove(String id) async {
     try {
-      // Usa método auxiliar da implementação
-      if (_repositoryImpl != null) {
-        await _repositoryImpl!.remove(id);
-      } else {
-        throw Exception('Repositório não suporta operação de remoção direta');
-      }
+      // Usa método da interface
+      await _repository.delete(id);
       
       // Remove da lista local
       _items.removeWhere((g) => g.id == id);
@@ -158,11 +143,10 @@ class WeeklyGoalsProvider extends ChangeNotifier {
     if (_currentUserId == null) return;
 
     try {
-      // Usa método auxiliar da implementação
-      if (_repositoryImpl != null) {
-        await _repositoryImpl!.clearForUser(_currentUserId!);
-      } else {
-        throw Exception('Repositório não suporta operação de limpeza direta');
+      // Remove cada goal individualmente usando a interface
+      final itemsToRemove = List<String>.from(_items.map((g) => g.id));
+      for (final id in itemsToRemove) {
+        await _repository.delete(id);
       }
       
       _items.clear();
@@ -178,12 +162,8 @@ class WeeklyGoalsProvider extends ChangeNotifier {
   /// Atualiza um goal completo
   Future<void> updateGoal(WeeklyGoal goal) async {
     try {
-      // Usa método auxiliar da implementação
-      if (_repositoryImpl != null) {
-        await _repositoryImpl!.add(goal);
-      } else {
-        throw Exception('Repositório não suporta operação de atualização direta');
-      }
+      // Usa método da interface
+      await _repository.update(goal);
       
       // Atualiza lista local
       final index = _items.indexWhere((g) => g.id == goal.id);

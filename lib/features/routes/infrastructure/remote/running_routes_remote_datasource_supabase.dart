@@ -196,4 +196,27 @@ class SupabaseRunningRoutesRemoteDatasource {
       return 0; // Melhor esforço: erro não bloqueia pull
     }
   }
+  
+  /// Deleta uma rota pelo ID
+  Future<void> deleteRunningRoute(String id) async {
+    try {
+      if (kDebugMode) {
+        print('[SupabaseRunningRoutesRemoteDatasource] Deletando rota: $id');
+      }
+      
+      await _client
+        .from(_table)
+        .delete()
+        .eq('id', id);
+      
+      if (kDebugMode) {
+        print('[SupabaseRunningRoutesRemoteDatasource] Rota deletada com sucesso');
+      }
+    } catch (e) {
+      if (kDebugMode) {
+        print('[SupabaseRunningRoutesRemoteDatasource] Erro ao deletar rota: $e');
+      }
+      rethrow;
+    }
+  }
 }

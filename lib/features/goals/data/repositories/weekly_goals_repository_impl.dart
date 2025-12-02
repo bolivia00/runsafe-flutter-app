@@ -87,10 +87,8 @@ class WeeklyGoalsRepositoryImpl implements WeeklyGoalsRepository {
       );
     }
   }
-
-  // Métodos auxiliares (não fazem parte da interface, mas úteis)
   
-  /// Adiciona ou atualiza um goal
+  @override
   Future<void> add(WeeklyGoal goal) async {
     try {
       await _dao.save(goal);
@@ -101,15 +99,27 @@ class WeeklyGoalsRepositoryImpl implements WeeklyGoalsRepository {
       );
     }
   }
-
-  /// Remove um goal pelo ID
-  Future<void> remove(String id) async {
+  
+  @override
+  Future<void> update(WeeklyGoal goal) async {
+    try {
+      await _dao.save(goal);
+    } catch (e) {
+      throw WeeklyGoalRepositoryException(
+        'Erro ao atualizar goal: $e',
+        operation: 'update',
+      );
+    }
+  }
+  
+  @override
+  Future<void> delete(String id) async {
     try {
       await _dao.delete(id);
     } catch (e) {
       throw WeeklyGoalRepositoryException(
         'Erro ao remover goal: $e',
-        operation: 'remove',
+        operation: 'delete',
       );
     }
   }

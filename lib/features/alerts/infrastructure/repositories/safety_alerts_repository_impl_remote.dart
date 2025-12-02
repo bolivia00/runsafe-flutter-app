@@ -175,6 +175,52 @@ class SafetyAlertsRepositoryImplRemote implements SafetyAlertsRepository {
         return 'other';
     }
   }
+  
+  @override
+  Future<void> add(SafetyAlert alert) async {
+    final dto = _mapper.toDto(alert, updatedAt: DateTime.now().toUtc());
+    final existing = await _localDao.listAll();
+    final updated = [...existing, dto];
+    await _localDao.upsertAll(updated);
+    
+    if (kDebugMode) {
+      print('[SafetyAlertsRepositoryImplRemote] Alerta adicionado localmente: ${alert.id}');
+    }
+  }
+  
+  @override
+  Future<void> update(SafetyAlert alert) async {
+    final dto = _mapper.toDto(alert, updatedAt: DateTime.now().toUtc());
+    final existing = await _localDao.listAll();
+    final updated = existing.where((d) => d.id != alert.id).toList()..add(dto);
+    await _localDao.upsertAll(updated);
+    
+    if (kDebugMode) {
+      print('[SafetyAlertsRepositoryImplRemote] Alerta atualizado localmente: ${alert.id}');
+    }
+  }
+  
+  @override
+  Future<void> delete(String id) async {
+    // 1. Deletar do Supabase primeiro
+    try {
+      await _remote.deleteSafetyAlert(id);
+    } catch (e) {
+      if (kDebugMode) {
+        print('[SafetyAlertsRepositoryImplRemote] Erro ao deletar no Supabase: $e');
+      }
+      rethrow;
+    }
+    
+    // 2. Deletar do cache local
+    final existing = await _localDao.listAll();
+    final updated = existing.where((d) => d.id != id).toList();
+    await _localDao.upsertAll(updated);
+    
+    if (kDebugMode) {
+      print('[SafetyAlertsRepositoryImplRemote] Alerta removido localmente e do Supabase: $id');
+    }
+  }
 }
 
 // Bloco de uso (exemplo):

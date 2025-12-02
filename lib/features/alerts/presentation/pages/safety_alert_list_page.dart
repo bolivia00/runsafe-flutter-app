@@ -49,11 +49,21 @@ class _SafetyAlertListPageState extends State<SafetyAlertListPage>
     final newAlert = await showSafetyAlertFormDialog(context);
 
     if (newAlert != null && context.mounted) {
-      // Nota: novo repositório não tem addAlert, apenas sync do servidor
-      // Para adicionar localmente, precisaria estender o repositório ou fazer pelo Supabase direto
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Adicionar alerta não implementado no novo repositório')),
-      );
+      try {
+        await context.read<SafetyAlertsProvider>().addAlert(newAlert);
+        
+        if (context.mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(content: Text('Alerta adicionado com sucesso!')),
+          );
+        }
+      } catch (e) {
+        if (context.mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(content: Text('Erro ao adicionar alerta: $e')),
+          );
+        }
+      }
       
       if (_showTip) {
         setState(() => _showTip = false);
@@ -70,10 +80,21 @@ class _SafetyAlertListPageState extends State<SafetyAlertListPage>
     );
 
     if (updatedAlert != null && context.mounted) {
-      // Nota: novo repositório não tem editAlert, apenas sync do servidor
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Editar alerta não implementado no novo repositório')),
-      );
+      try {
+        await context.read<SafetyAlertsProvider>().updateAlert(updatedAlert);
+        
+        if (context.mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(content: Text('Alerta atualizado com sucesso!')),
+          );
+        }
+      } catch (e) {
+        if (context.mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(content: Text('Erro ao atualizar alerta: $e')),
+          );
+        }
+      }
     }
   }
 
@@ -185,11 +206,22 @@ class _SafetyAlertListPageState extends State<SafetyAlertListPage>
           key: Key(alert.id),
           direction: DismissDirection.endToStart,
           
-          onDismissed: (direction) {
-            // Nota: novo repositório não tem deleteAlert local
-            ScaffoldMessenger.of(context).showSnackBar(
-              const SnackBar(content: Text('Deletar alerta não implementado no novo repositório')),
-            );
+          onDismissed: (direction) async {
+            try {
+              await context.read<SafetyAlertsProvider>().deleteAlert(alert.id);
+              
+              if (context.mounted) {
+                ScaffoldMessenger.of(context).showSnackBar(
+                  const SnackBar(content: Text('Alerta removido com sucesso!')),
+                );
+              }
+            } catch (e) {
+              if (context.mounted) {
+                ScaffoldMessenger.of(context).showSnackBar(
+                  SnackBar(content: Text('Erro ao remover alerta: $e')),
+                );
+              }
+            }
           },
           
           background: Container(

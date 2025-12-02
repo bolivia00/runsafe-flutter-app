@@ -110,6 +110,60 @@ class RunningRoutesProvider extends ChangeNotifier {
     }
   }
 
+  /// Adiciona nova rota
+  Future<void> addRoute(RunningRoute route) async {
+    try {
+      await _repository.add(route);
+      _routes = await _repository.listAll();
+      notifyListeners();
+      
+      if (kDebugMode) {
+        print('[RunningRoutesProvider] Rota adicionada: ${route.id}');
+      }
+    } catch (e) {
+      if (kDebugMode) {
+        print('[RunningRoutesProvider] Erro ao adicionar rota: $e');
+      }
+      rethrow;
+    }
+  }
+  
+  /// Atualiza rota existente
+  Future<void> updateRoute(RunningRoute route) async {
+    try {
+      await _repository.update(route);
+      _routes = await _repository.listAll();
+      notifyListeners();
+      
+      if (kDebugMode) {
+        print('[RunningRoutesProvider] Rota atualizada: ${route.id}');
+      }
+    } catch (e) {
+      if (kDebugMode) {
+        print('[RunningRoutesProvider] Erro ao atualizar rota: $e');
+      }
+      rethrow;
+    }
+  }
+  
+  /// Remove rota
+  Future<void> deleteRoute(String id) async {
+    try {
+      await _repository.delete(id);
+      _routes = await _repository.listAll();
+      notifyListeners();
+      
+      if (kDebugMode) {
+        print('[RunningRoutesProvider] Rota removida: $id');
+      }
+    } catch (e) {
+      if (kDebugMode) {
+        print('[RunningRoutesProvider] Erro ao remover rota: $e');
+      }
+      rethrow;
+    }
+  }
+  
   /// Método auxiliar para verificar se o provider ainda está montado
   bool get mounted => hasListeners;
 }

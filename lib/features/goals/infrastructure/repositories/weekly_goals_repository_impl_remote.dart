@@ -125,6 +125,57 @@ class WeeklyGoalsRepositoryImplRemote implements WeeklyGoalsRepository {
     }
     return null;
   }
+  
+  @override
+  Future<void> add(WeeklyGoal goal) async {
+    final all = await loadFromCache();
+    final updated = [...all, goal];
+    final models = updated.map((g) => WeeklyGoalModel.fromEntity(g)).toList();
+    await _remote.upsertWeeklyGoals(models);
+    
+    // Atualiza cache local
+    await _localDao.save(goal);
+    
+    if (kDebugMode) {
+      print('[WeeklyGoalsRepositoryImplRemote] Meta adicionada: ${goal.id}');
+    }
+  }
+  
+  @override
+  Future<void> update(WeeklyGoal goal) async {
+    final all = await loadFromCache();
+    final filtered = all.where((g) => g.id != goal.id).toList();
+    final updated = [...filtered, goal];
+    final models = updated.map((g) => WeeklyGoalModel.fromEntity(g)).toList();
+    await _remote.upsertWeeklyGoals(models);
+    
+    // Atualiza cache local
+    await _localDao.save(goal);
+    
+    if (kDebugMode) {
+      print('[WeeklyGoalsRepositoryImplRemote] Meta atualizada: ${goal.id}');
+    }
+  }
+  
+  @override
+  Future<void> delete(String id) async {
+    // 1. Deletar do Supabase primeiro
+    try {
+      await _remote.deleteWeeklyGoal(id);
+    } catch (e) {
+      if (kDebugMode) {
+        print('[WeeklyGoalsRepositoryImplRemote] Erro ao deletar no Supabase: $e');
+      }
+      rethrow;
+    }
+    
+    // 2. Deletar do cache local
+    await _localDao.delete(id);
+    
+    if (kDebugMode) {
+      print('[WeeklyGoalsRepositoryImplRemote] Meta removida localmente e do Supabase: $id');
+    }
+  }
 }
 
 // Bloco de uso (exemplo):

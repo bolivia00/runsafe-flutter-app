@@ -94,6 +94,60 @@ class WaypointsProvider extends ChangeNotifier {
     }
   }
 
+  /// Adiciona novo waypoint
+  Future<void> addWaypoint(Waypoint waypoint) async {
+    try {
+      await _repository.add(waypoint);
+      _waypoints = await _repository.listAll();
+      notifyListeners();
+      
+      if (kDebugMode) {
+        print('[WaypointsProvider] Waypoint adicionado: ${waypoint.timestamp.toIso8601String()}');
+      }
+    } catch (e) {
+      if (kDebugMode) {
+        print('[WaypointsProvider] Erro ao adicionar waypoint: $e');
+      }
+      rethrow;
+    }
+  }
+  
+  /// Atualiza waypoint existente
+  Future<void> updateWaypoint(Waypoint waypoint) async {
+    try {
+      await _repository.update(waypoint);
+      _waypoints = await _repository.listAll();
+      notifyListeners();
+      
+      if (kDebugMode) {
+        print('[WaypointsProvider] Waypoint atualizado: ${waypoint.timestamp.toIso8601String()}');
+      }
+    } catch (e) {
+      if (kDebugMode) {
+        print('[WaypointsProvider] Erro ao atualizar waypoint: $e');
+      }
+      rethrow;
+    }
+  }
+  
+  /// Remove waypoint
+  Future<void> deleteWaypoint(String timestampIso) async {
+    try {
+      await _repository.delete(timestampIso);
+      _waypoints = await _repository.listAll();
+      notifyListeners();
+      
+      if (kDebugMode) {
+        print('[WaypointsProvider] Waypoint removido: $timestampIso');
+      }
+    } catch (e) {
+      if (kDebugMode) {
+        print('[WaypointsProvider] Erro ao remover waypoint: $e');
+      }
+      rethrow;
+    }
+  }
+
   /// Método auxiliar para verificar se o provider ainda está montado
   bool get mounted => hasListeners;
 }

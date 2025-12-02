@@ -88,6 +88,60 @@ class SafetyAlertsProvider extends ChangeNotifier {
     }
   }
   
+  /// Adiciona novo alerta
+  Future<void> addAlert(SafetyAlert alert) async {
+    try {
+      await _repository.add(alert);
+      _alerts = await _repository.listAll();
+      notifyListeners();
+      
+      if (kDebugMode) {
+        print('[SafetyAlertsProvider] Alerta adicionado: ${alert.id}');
+      }
+    } catch (e) {
+      if (kDebugMode) {
+        print('[SafetyAlertsProvider] Erro ao adicionar alerta: $e');
+      }
+      rethrow;
+    }
+  }
+  
+  /// Atualiza alerta existente
+  Future<void> updateAlert(SafetyAlert alert) async {
+    try {
+      await _repository.update(alert);
+      _alerts = await _repository.listAll();
+      notifyListeners();
+      
+      if (kDebugMode) {
+        print('[SafetyAlertsProvider] Alerta atualizado: ${alert.id}');
+      }
+    } catch (e) {
+      if (kDebugMode) {
+        print('[SafetyAlertsProvider] Erro ao atualizar alerta: $e');
+      }
+      rethrow;
+    }
+  }
+  
+  /// Remove alerta
+  Future<void> deleteAlert(String id) async {
+    try {
+      await _repository.delete(id);
+      _alerts = await _repository.listAll();
+      notifyListeners();
+      
+      if (kDebugMode) {
+        print('[SafetyAlertsProvider] Alerta removido: $id');
+      }
+    } catch (e) {
+      if (kDebugMode) {
+        print('[SafetyAlertsProvider] Erro ao remover alerta: $e');
+      }
+      rethrow;
+    }
+  }
+  
   /// Método auxiliar para verificar se o provider ainda está montado
   bool get mounted => hasListeners;
 }

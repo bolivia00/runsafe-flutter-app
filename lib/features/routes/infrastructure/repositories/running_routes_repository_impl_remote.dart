@@ -163,6 +163,52 @@ class RunningRoutesRepositoryImplRemote implements RunningRoutesRepository {
       updatedAt: DateTime.now().toUtc(),
     );
   }
+  
+  @override
+  Future<void> add(RunningRoute route) async {
+    final dto = _mapper.toDto(route);
+    final existing = await _localDao.listAll();
+    final updated = [...existing, dto];
+    await _localDao.upsertAll(updated);
+    
+    if (kDebugMode) {
+      print('[RunningRoutesRepositoryImplRemote] Rota adicionada localmente: ${route.id}');
+    }
+  }
+  
+  @override
+  Future<void> update(RunningRoute route) async {
+    final dto = _mapper.toDto(route);
+    final existing = await _localDao.listAll();
+    final updated = existing.where((d) => d.route_id != route.id).toList()..add(dto);
+    await _localDao.upsertAll(updated);
+    
+    if (kDebugMode) {
+      print('[RunningRoutesRepositoryImplRemote] Rota atualizada localmente: ${route.id}');
+    }
+  }
+  
+  @override
+  Future<void> delete(String id) async {
+    // 1. Deletar do Supabase primeiro
+    try {
+      await _remote.deleteRunningRoute(id);
+    } catch (e) {
+      if (kDebugMode) {
+        print('[RunningRoutesRepositoryImplRemote] Erro ao deletar no Supabase: $e');
+      }
+      rethrow;
+    }
+    
+    // 2. Deletar do cache local
+    final existing = await _localDao.listAll();
+    final updated = existing.where((d) => d.route_id != id).toList();
+    await _localDao.upsertAll(updated);
+    
+    if (kDebugMode) {
+      print('[RunningRoutesRepositoryImplRemote] Rota removida localmente e do Supabase: $id');
+    }
+  }
 }
 
 // Bloco de uso (exemplo):
