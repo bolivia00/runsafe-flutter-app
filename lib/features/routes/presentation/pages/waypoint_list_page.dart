@@ -51,13 +51,14 @@ class _WaypointListPageState extends State<WaypointListPage>
 
   void _addWaypoint(BuildContext context) async {
     final provider = context.read<WaypointsProvider>();
+    final scaffoldMessenger = ScaffoldMessenger.of(context);
     final newWaypoint = await showWaypointFormDialog(context);
 
     if (newWaypoint != null) {
       try {
         await provider.addWaypoint(newWaypoint);
         if (mounted) {
-          ScaffoldMessenger.of(context).showSnackBar(
+          scaffoldMessenger.showSnackBar(
             const SnackBar(content: Text('Waypoint adicionado com sucesso.')),
           );
         }
@@ -69,7 +70,7 @@ class _WaypointListPageState extends State<WaypointListPage>
         }
       } catch (e) {
         if (mounted) {
-          ScaffoldMessenger.of(context).showSnackBar(
+          scaffoldMessenger.showSnackBar(
             SnackBar(content: Text('Erro ao adicionar waypoint: $e')),
           );
         }
@@ -79,6 +80,7 @@ class _WaypointListPageState extends State<WaypointListPage>
 
   void _editWaypoint(BuildContext context, Waypoint waypointToEdit) async {
     final provider = context.read<WaypointsProvider>();
+    final scaffoldMessenger = ScaffoldMessenger.of(context);
     final updatedWaypoint = await showWaypointFormDialog(
       context,
       initial: waypointToEdit, 
@@ -88,13 +90,13 @@ class _WaypointListPageState extends State<WaypointListPage>
       try {
         await provider.updateWaypoint(updatedWaypoint);
         if (mounted) {
-          ScaffoldMessenger.of(context).showSnackBar(
+          scaffoldMessenger.showSnackBar(
             const SnackBar(content: Text('Waypoint atualizado com sucesso.')),
           );
         }
       } catch (e) {
         if (mounted) {
-          ScaffoldMessenger.of(context).showSnackBar(
+          scaffoldMessenger.showSnackBar(
             SnackBar(content: Text('Erro ao atualizar waypoint: $e')),
           );
         }
@@ -212,16 +214,17 @@ class _WaypointListPageState extends State<WaypointListPage>
           
           onDismissed: (direction) async {
             final provider = context.read<WaypointsProvider>();
+            final scaffoldMessenger = ScaffoldMessenger.of(context);
             try {
               await provider.deleteWaypoint(waypoint.timestamp.toIso8601String());
               if (mounted) {
-                ScaffoldMessenger.of(context).showSnackBar(
+                scaffoldMessenger.showSnackBar(
                   const SnackBar(content: Text('Ponto de rota excluído.')),
                 );
               }
             } catch (e) {
               if (mounted) {
-                ScaffoldMessenger.of(context).showSnackBar(
+                scaffoldMessenger.showSnackBar(
                   SnackBar(content: Text('Erro ao excluir waypoint: $e')),
                 );
               }
