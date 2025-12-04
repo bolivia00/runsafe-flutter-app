@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:provider/provider.dart';
 import 'package:runsafe/features/profile/data/repositories/profile_repository.dart';
+import 'package:runsafe/core/theme/theme_controller.dart';
 import 'package:runsafe/core/utils/app_colors.dart';
 
 class AppDrawer extends StatelessWidget {
@@ -191,6 +192,32 @@ class AppDrawer extends StatelessWidget {
             onTap: () {
               Navigator.of(context).pop();
               Navigator.of(context).pushNamed('/running-routes');
+            },
+          ),
+          const Divider(),
+          // Toggle de tema
+          Consumer<ThemeController>(
+            builder: (context, themeController, child) {
+              final brightness = MediaQuery.platformBrightnessOf(context);
+              final isDark = themeController.mode == ThemeMode.dark ||
+                  (themeController.mode == ThemeMode.system && 
+                   brightness == Brightness.dark);
+              
+              return SwitchListTile(
+                secondary: Icon(
+                  isDark ? Icons.dark_mode : Icons.light_mode_outlined,
+                ),
+                title: const Text('Tema escuro'),
+                subtitle: Text(
+                  themeController.isSystemMode 
+                      ? 'Seguindo o sistema' 
+                      : (isDark ? 'Ativado' : 'Desativado'),
+                ),
+                value: isDark,
+                onChanged: (value) async {
+                  await themeController.toggle(brightness);
+                },
+              );
             },
           ),
         ],

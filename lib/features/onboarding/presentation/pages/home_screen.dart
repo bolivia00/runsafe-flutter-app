@@ -1,5 +1,4 @@
 import 'package:flutter/material.dart';
-import 'package:runsafe/core/utils/app_colors.dart';
 import 'package:runsafe/core/widgets/app_drawer.dart';
 
 class HomeScreen extends StatelessWidget {
@@ -7,13 +6,15 @@ class HomeScreen extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    // Obter cores do tema atual
+    final colorScheme = Theme.of(context).colorScheme;
+    final textTheme = Theme.of(context).textTheme;
+    
     return Scaffold(
       appBar: AppBar(
         title: const Text('RunSafe', style: TextStyle(fontWeight: FontWeight.bold)),
         centerTitle: true,
         elevation: 0,
-        backgroundColor: Colors.transparent,
-        foregroundColor: AppColors.navy, // Cor do texto/ícones
       ),
       drawer: const AppDrawer(), // O Menu Lateral
       body: SafeArea(
@@ -26,23 +27,25 @@ class HomeScreen extends StatelessWidget {
               Container(
                 padding: const EdgeInsets.all(20),
                 decoration: BoxDecoration(
-                    color: AppColors.emerald.withAlpha((0.1 * 255).toInt()),
+                  color: colorScheme.primaryContainer,
                   borderRadius: BorderRadius.circular(16),
                 ),
                 child: Column(
                   children: [
                     Text(
                       'Bem-vindo ao RunSafe!',
-                      style: Theme.of(context).textTheme.headlineSmall?.copyWith(
-                            fontWeight: FontWeight.bold,
-                            color: AppColors.navy,
-                          ),
+                      style: textTheme.headlineSmall?.copyWith(
+                        fontWeight: FontWeight.bold,
+                        color: colorScheme.onPrimaryContainer,
+                      ),
                       textAlign: TextAlign.center,
                     ),
                     const SizedBox(height: 8),
-                    const Text(
+                    Text(
                       'Rastreie suas corridas com segurança',
-                      style: TextStyle(color: AppColors.gray),
+                      style: textTheme.bodyMedium?.copyWith(
+                        color: colorScheme.onPrimaryContainer.withValues(alpha: 0.8),
+                      ),
                       textAlign: TextAlign.center,
                     ),
                   ],
@@ -52,10 +55,10 @@ class HomeScreen extends StatelessWidget {
               
               Text(
                 'Acesso Rápido',
-                style: Theme.of(context).textTheme.titleLarge?.copyWith(
-                      fontWeight: FontWeight.bold,
-                      color: AppColors.navy,
-                    ),
+                style: textTheme.titleLarge?.copyWith(
+                  fontWeight: FontWeight.bold,
+                  color: colorScheme.onSurface,
+                ),
               ),
               const SizedBox(height: 16),
 
@@ -71,28 +74,24 @@ class HomeScreen extends StatelessWidget {
                       icon: Icons.flag,
                       label: 'Metas Semanais',
                       route: '/weekly-goals',
-                      color: AppColors.emerald,
                     ),
                     _buildMenuCard(
                       context,
                       icon: Icons.notifications_active,
                       label: 'Alertas',
                       route: '/safety-alerts',
-                      color: AppColors.emerald,
                     ),
                     _buildMenuCard(
                       context,
                       icon: Icons.location_on,
                       label: 'Waypoints',
                       route: '/waypoints',
-                      color: AppColors.emerald,
                     ),
                     _buildMenuCard(
                       context,
                       icon: Icons.route,
                       label: 'Rotas',
                       route: '/running-routes',
-                      color: AppColors.emerald,
                     ),
                   ],
                 ),
@@ -109,17 +108,18 @@ class HomeScreen extends StatelessWidget {
     required IconData icon,
     required String label,
     required String route,
-    required Color color,
   }) {
+    final colorScheme = Theme.of(context).colorScheme;
+    
     return GestureDetector(
       onTap: () => Navigator.pushNamed(context, route),
       child: Container(
         decoration: BoxDecoration(
-          color: Colors.white,
+          color: colorScheme.surfaceContainerHighest,
           borderRadius: BorderRadius.circular(16),
           boxShadow: [
             BoxShadow(
-                color: Colors.black.withAlpha((0.05 * 255).toInt()),
+              color: Colors.black.withValues(alpha: 0.05),
               blurRadius: 10,
               offset: const Offset(0, 4),
             ),
@@ -131,18 +131,24 @@ class HomeScreen extends StatelessWidget {
             Container(
               padding: const EdgeInsets.all(16),
               decoration: BoxDecoration(
-                 color: color.withAlpha((0.1 * 255).toInt()),
+                color: colorScheme.primaryContainer,
                 shape: BoxShape.circle,
               ),
-              child: Icon(icon, size: 32, color: color),
+              child: Icon(
+                icon, 
+                size: 32, 
+                color: colorScheme.primary,
+              ),
             ),
             const SizedBox(height: 16),
             Text(
               label,
-              style: const TextStyle(
+              style: TextStyle(
                 fontWeight: FontWeight.bold,
                 fontSize: 14,
+                color: colorScheme.onSurface,
               ),
+              textAlign: TextAlign.center,
             ),
           ],
         ),

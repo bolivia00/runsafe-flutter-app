@@ -7,6 +7,8 @@ import 'package:runsafe/core/services/storage_service.dart';
 import 'package:runsafe/core/services/safety_alerts_local_dao.dart';
 import 'package:runsafe/core/services/running_routes_local_dao.dart';
 import 'package:runsafe/core/services/waypoints_local_dao.dart';
+import 'package:runsafe/core/theme/theme_controller.dart';
+import 'package:runsafe/core/theme/color_schemes.dart';
 import 'package:runsafe/features/goals/data/datasources/weekly_goals_local_dao.dart';
 import 'package:runsafe/features/goals/data/repositories/weekly_goals_repository_impl.dart';
 import 'package:runsafe/features/goals/presentation/providers/weekly_goals_provider.dart';
@@ -35,8 +37,6 @@ import 'package:runsafe/features/alerts/presentation/pages/safety_alert_list_pag
 import 'package:runsafe/features/routes/presentation/pages/waypoint_list_page.dart';
 import 'package:runsafe/features/routes/presentation/pages/running_route_list_page.dart';
 
-import 'package:runsafe/core/utils/app_colors.dart';
-
 Future<void> main() async {
   // Necessário quando usamos inicialização assíncrona no main()
   WidgetsFlutterBinding.ensureInitialized();
@@ -50,9 +50,14 @@ Future<void> main() async {
     anonKey: dotenv.env['SUPABASE_ANON_KEY']!,
   );
 
+  // 🎨 Criar e carregar o controlador de tema
+  final themeController = ThemeController();
+  await themeController.load();
+
   runApp(
     MultiProvider(
       providers: [
+        ChangeNotifierProvider.value(value: themeController),
         ChangeNotifierProvider(
           create: (context) => ProfileRepository()..loadPhotoPath(),
         ),
@@ -111,22 +116,40 @@ class RunSafeApp extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return MaterialApp(
-      title: 'RunSafe',
-      theme: ThemeData(
-        useMaterial3: true,
-        colorScheme: ColorScheme.fromSeed(seedColor: AppColors.emerald),
-      ),
-      initialRoute: '/',
-      routes: {
-        '/': (context) => const SplashScreen(),
-        '/onboarding': (context) => const OnboardingScreen(),
-        '/privacy': (context) => const PrivacyPolicyScreen(),
-        '/home': (context) => const HomeScreen(),
-        '/weekly-goals': (context) => const WeeklyGoalListPage(),
-        '/safety-alerts': (context) => const SafetyAlertListPage(),
-        '/waypoints': (context) => const WaypointListPage(),
-        '/running-routes': (context) => const RunningRouteListPage(),
+    // Consumer para reconstruir quando o tema mudar
+    return Consumer<ThemeController>(
+      builder: (context, themeController, child) {
+        return MaterialApp(
+          title: 'RunSafe',
+          debugShowCheckedModeBanner: false,
+          
+          // Usa o modo do controller
+          themeMode: themeController.mode,
+          
+          // Tema claro com Material 3
+          theme: ThemeData(
+            useMaterial3: true,
+            colorScheme: lightColorScheme,
+          ),
+          
+          // Tema escuro com Material 3
+          darkTheme: ThemeData(
+            useMaterial3: true,
+            colorScheme: darkColorScheme,
+          ),
+          
+          initialRoute: '/',
+          routes: {
+            '/': (context) => const SplashScreen(),
+            '/onboarding': (context) => const OnboardingScreen(),
+            '/privacy': (context) => const PrivacyPolicyScreen(),
+            '/home': (context) => const HomeScreen(),
+            '/weekly-goals': (context) => const WeeklyGoalListPage(),
+            '/safety-alerts': (context) => const SafetyAlertListPage(),
+            '/waypoints': (context) => const WaypointListPage(),
+            '/running-routes': (context) => const RunningRouteListPage(),
+          },
+        );
       },
     );
   }
