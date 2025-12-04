@@ -18,17 +18,6 @@ class SafetyAlertsRepositoryImplRemote implements SafetyAlertsRepository {
 
   SafetyAlertsRepositoryImplRemote(this._localDao, this._remote, this._mapper);
 
-  Future<DateTime?> _getLastSync() async {
-    final prefs = await SharedPreferences.getInstance();
-    final raw = prefs.getString(_lastSyncKey);
-    if (raw == null) return null;
-    try {
-      return DateTime.parse(raw).toUtc();
-    } catch (_) {
-      return null;
-    }
-  }
-
   Future<void> _setLastSync(DateTime dt) async {
     final prefs = await SharedPreferences.getInstance();
     await prefs.setString(_lastSyncKey, dt.toUtc().toIso8601String());
@@ -90,44 +79,30 @@ class SafetyAlertsRepositoryImplRemote implements SafetyAlertsRepository {
       }
     }
     
-    // === FASE 2: PULL (incremental desde lastSync) ===
-    final lastSync = await _getLastSync();
-    
+    // === FASE 2: PULL (busca completa para detectar exclusões) ===
     if (kDebugMode) {
-      print('[SafetyAlertsRepositoryImplRemote] Iniciando PULL. lastSync=${lastSync?.toIso8601String() ?? 'null'}');
+      print('[SafetyAlertsRepositoryImplRemote] Iniciando PULL completo...');
     }
     
-    final page = await _remote.fetchSafetyAlerts(since: lastSync);
+    // Busca TODOS os alertas do Supabase (sem filtro since)
+    final page = await _remote.fetchSafetyAlerts(since: null);
     final fetched = page.items;
     
-    if (fetched.isEmpty) {
-      if (kDebugMode) {
-        print('[SafetyAlertsRepositoryImplRemote] PULL: nenhum alerta novo/alterado.');
-      }
-      await _setLastSync(startedAt);
-      return 0;
-    }
-    
-    // Merge por ID
-    final existingDtos = await _localDao.listAll();
-    final existingById = {for (var d in existingDtos) d.id: d};
-    
-    int changes = 0;
-    for (final model in fetched) {
+    // Converte para DTOs
+    final newDtos = fetched.map((model) {
       final entity = _modelToEntity(model);
-      final dto = _mapper.toDto(entity, updatedAt: model.updatedAt);
-      existingById[dto.id] = dto;
-      changes++;
-    }
+      return _mapper.toDto(entity, updatedAt: model.updatedAt);
+    }).toList();
     
-    await _localDao.upsertAll(existingById.values.toList());
+    // Substitui cache local completamente
+    await _localDao.upsertAll(newDtos);
     
     if (kDebugMode) {
-      print('[SafetyAlertsRepositoryImplRemote] PULL concluído: $changes alertas atualizados');
+      print('[SafetyAlertsRepositoryImplRemote] PULL concluído: ${newDtos.length} alertas sincronizados');
     }
     
     await _setLastSync(startedAt);
-    return changes;
+    return newDtos.length;
   }
 
   @override

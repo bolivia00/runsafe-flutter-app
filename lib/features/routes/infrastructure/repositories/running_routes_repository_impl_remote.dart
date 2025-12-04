@@ -19,17 +19,6 @@ class RunningRoutesRepositoryImplRemote implements RunningRoutesRepository {
 
   RunningRoutesRepositoryImplRemote(this._localDao, this._remote, this._mapper);
 
-  Future<DateTime?> _getLastSync() async {
-    final prefs = await SharedPreferences.getInstance();
-    final raw = prefs.getString(_lastSyncKey);
-    if (raw == null) return null;
-    try {
-      return DateTime.parse(raw).toUtc();
-    } catch (_) {
-      return null;
-    }
-  }
-
   Future<void> _setLastSync(DateTime dt) async {
     final prefs = await SharedPreferences.getInstance();
     await prefs.setString(_lastSyncKey, dt.toUtc().toIso8601String());
@@ -87,44 +76,31 @@ class RunningRoutesRepositoryImplRemote implements RunningRoutesRepository {
     }
     
     // === FASE 2: PULL (incremental desde lastSync) ===
-    final lastSync = await _getLastSync();
-    
+    // === FASE 2: PULL (busca completa para detectar exclusões) ===
     if (kDebugMode) {
-      print('[RunningRoutesRepositoryImplRemote] Iniciando PULL. lastSync=${lastSync?.toIso8601String() ?? 'null'}');
+      print('[RunningRoutesRepositoryImplRemote] Iniciando PULL completo...');
     }
     
-    final page = await _remote.fetchRunningRoutes(since: lastSync);
+    // Busca TODAS as rotas do Supabase (sem filtro since)
+    final page = await _remote.fetchRunningRoutes(since: null);
     final fetched = page.items;
     
-    if (fetched.isEmpty) {
-      if (kDebugMode) {
-        print('[RunningRoutesRepositoryImplRemote] PULL: nenhuma rota nova/alterada.');
-      }
-      await _setLastSync(startedAt);
-      return 0;
-    }
-    
-    // Merge por ID
-    final existingDtos = await _localDao.listAll();
-    final existingById = {for (var d in existingDtos) d.route_id: d};
-    
-    int changes = 0;
-    for (final model in fetched) {
+    // Converte para DTOs
+    final newDtos = fetched.map((model) {
       final entity = _modelToEntity(model);
-      final dto = _mapper.toDto(entity);
-      existingById[dto.route_id] = dto;
-      changes++;
-    }
+      return _mapper.toDto(entity);
+    }).toList();
     
-    await _localDao.upsertAll(existingById.values.toList());
+    // Substitui cache local completamente
+    await _localDao.upsertAll(newDtos);
     
     if (kDebugMode) {
       final totalWaypoints = fetched.fold<int>(0, (sum, m) => sum + m.waypoints.length);
-      print('[RunningRoutesRepositoryImplRemote] PULL concluído: $changes rotas, $totalWaypoints waypoints');
+      print('[RunningRoutesRepositoryImplRemote] PULL concluído: ${newDtos.length} rotas, $totalWaypoints waypoints');
     }
     
     await _setLastSync(startedAt);
-    return changes;
+    return newDtos.length;
   }
 
   @override

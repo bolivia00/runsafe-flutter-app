@@ -17,17 +17,6 @@ class WeeklyGoalsRepositoryImplRemote implements WeeklyGoalsRepository {
 
   WeeklyGoalsRepositoryImplRemote(this._localDao, this._remote);
 
-  Future<DateTime?> _getLastSync() async {
-    final prefs = await SharedPreferences.getInstance();
-    final raw = prefs.getString(_lastSyncKey);
-    if (raw == null) return null;
-    try {
-      return DateTime.parse(raw).toUtc();
-    } catch (_) {
-      return null;
-    }
-  }
-
   Future<void> _setLastSync(DateTime dt) async {
     final prefs = await SharedPreferences.getInstance();
     await prefs.setString(_lastSyncKey, dt.toUtc().toIso8601String());
@@ -69,37 +58,28 @@ class WeeklyGoalsRepositoryImplRemote implements WeeklyGoalsRepository {
       }
     }
     
-    // === FASE 2: PULL (incremental desde lastSync) ===
-    final lastSync = await _getLastSync();
-    
+    // === FASE 2: PULL (busca completa para detectar exclusões) ===
     if (kDebugMode) {
-      print('[WeeklyGoalsRepositoryImplRemote] Iniciando PULL. lastSync=${lastSync?.toIso8601String() ?? 'null'}');
+      print('[WeeklyGoalsRepositoryImplRemote] Iniciando PULL completo...');
     }
     
-    final page = await _remote.fetchWeeklyGoals(since: lastSync);
+    // Busca TODAS as metas do Supabase (sem filtro since)
+    final page = await _remote.fetchWeeklyGoals(since: null);
     final fetched = page.items;
     
-    if (fetched.isEmpty) {
-      if (kDebugMode) {
-        print('[WeeklyGoalsRepositoryImplRemote] PULL: nenhuma meta nova/alterada.');
-      }
-      await _setLastSync(startedAt);
-      return 0;
-    }
-    
-    int changes = 0;
+    // Limpa cache local e salva novas metas
+    await _localDao.clearForUser(_defaultUserId);
     for (final model in fetched) {
       final entity = model.toEntity();
       await _localDao.save(entity);
-      changes++;
     }
     
     if (kDebugMode) {
-      print('[WeeklyGoalsRepositoryImplRemote] PULL concluído: $changes metas atualizadas');
+      print('[WeeklyGoalsRepositoryImplRemote] PULL concluído: ${fetched.length} metas sincronizadas');
     }
     
     await _setLastSync(startedAt);
-    return changes;
+    return fetched.length;
   }
 
   @override
