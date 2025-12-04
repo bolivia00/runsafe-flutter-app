@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:supabase_flutter/supabase_flutter.dart'; // <-- ADICIONADO
+import 'package:flutter_dotenv/flutter_dotenv.dart'; // <-- ADICIONADO
 
 import 'package:runsafe/core/services/storage_service.dart';
 import 'package:runsafe/core/services/safety_alerts_local_dao.dart';
@@ -40,10 +41,13 @@ Future<void> main() async {
   // Necessário quando usamos inicialização assíncrona no main()
   WidgetsFlutterBinding.ensureInitialized();
 
+  // 🔥 Carregar variáveis de ambiente
+  await dotenv.load(fileName: ".env");
+
   // 🔥 Inicialização do Supabase
   await Supabase.initialize(
-    url: 'https://zdvsioopbbnmafnwsncj.supabase.co',
-    anonKey: 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InpkdnNpb29wYmJubWFmbndzbmNqIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjQ2MjQ4NjYsImV4cCI6MjA4MDIwMDg2Nn0.ldmZLoqPxV4DBIS7usc5kCPhquR_TOqOEXVXT81NNFk',
+    url: dotenv.env['SUPABASE_URL']!,
+    anonKey: dotenv.env['SUPABASE_ANON_KEY']!,
   );
 
   runApp(

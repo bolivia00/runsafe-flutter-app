@@ -27,6 +27,7 @@ dependencies:
   
   uuid: ^4.4.0
   supabase_flutter: ^2.10.3
+  flutter_dotenv: ^6.0.0
   
 dev_dependencies:
   flutter_test:
@@ -42,3 +43,4 @@ flutter:
   assets:
     # A linha abaixo deve ter QUATRO espaços antes.
     - assets/icons/
+    - .env
