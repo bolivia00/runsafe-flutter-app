@@ -30,6 +30,24 @@ class _WeeklyGoalsPageState extends State<WeeklyGoalsPage> {
       appBar: AppBar(
         title: const Text('Metas Semanais'),
         actions: [
+          Consumer<WeeklyGoalsProvider>(
+            builder: (context, provider, child) {
+              return IconButton(
+                icon: provider.loading
+                    ? const SizedBox(
+                        width: 20,
+                        height: 20,
+                        child: CircularProgressIndicator(
+                          strokeWidth: 2,
+                          valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
+                        ),
+                      )
+                    : const Icon(Icons.sync),
+                tooltip: 'Sincronizar',
+                onPressed: provider.loading ? null : () => provider.syncNow(),
+              );
+            },
+          ),
           IconButton(
             icon: const Icon(Icons.add),
             onPressed: () => _showAddGoalDialog(context),

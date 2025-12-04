@@ -110,6 +110,24 @@ class _WaypointListPageState extends State<WaypointListPage>
       appBar: AppBar(
         title: const Text('Pontos de Rota (Waypoints)'),
         actions: [
+          Consumer<WaypointsProvider>(
+            builder: (context, provider, child) {
+              return IconButton(
+                icon: provider.isLoading
+                    ? const SizedBox(
+                        width: 20,
+                        height: 20,
+                        child: CircularProgressIndicator(
+                          strokeWidth: 2,
+                          valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
+                        ),
+                      )
+                    : const Icon(Icons.sync),
+                tooltip: 'Sincronizar',
+                onPressed: provider.isLoading ? null : () => provider.syncNow(),
+              );
+            },
+          ),
           IconButton(
             icon: const Icon(Icons.help_outline),
             onPressed: () => setState(() => _showTutorial = true),

@@ -77,8 +77,26 @@ class _RunningRouteListPageState extends State<RunningRouteListPage>
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Minhas Rotas de Corrida'),
+        title: const Text('Rotas de Corrida'),
         actions: [
+          Consumer<RunningRoutesProvider>(
+            builder: (context, provider, child) {
+              return IconButton(
+                icon: provider.isLoading
+                    ? const SizedBox(
+                        width: 20,
+                        height: 20,
+                        child: CircularProgressIndicator(
+                          strokeWidth: 2,
+                          valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
+                        ),
+                      )
+                    : const Icon(Icons.sync),
+                tooltip: 'Sincronizar',
+                onPressed: provider.isLoading ? null : () => provider.syncNow(),
+              );
+            },
+          ),
           IconButton(
             icon: const Icon(Icons.help_outline),
             onPressed: () => setState(() => _showTutorial = true),
