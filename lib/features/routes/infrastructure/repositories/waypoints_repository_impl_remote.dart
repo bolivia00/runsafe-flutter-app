@@ -46,13 +46,36 @@ class WaypointsRepositoryImplRemote implements WaypointsRepository {
   Future<int> syncFromServer() async {
     final startedAt = DateTime.now().toUtc();
     
-    // === FASE 1: PUSH (melhor esforço) ===
+    // === FASE 1: PULL (busca do servidor PRIMEIRO para detectar exclusões) ===
+    if (kDebugMode) {
+      print('[WaypointsRepositoryImplRemote] Iniciando PULL completo...');
+    }
+    
+    // Busca TODOS os waypoints do Supabase (sem filtro since)
+    final page = await _remote.fetchWaypoints(since: null);
+    final fetched = page.items;
+    
+    // Converte para DTOs
+    final newDtos = fetched.map((model) {
+      final entity = _modelToEntity(model);
+      return _mapper.toDto(entity);
+    }).toList();
+    
+    // Substitui cache local completamente
+    await _localDao.clear();
+    await _localDao.upsertAll(newDtos);
+    
+    if (kDebugMode) {
+      print('[WaypointsRepositoryImplRemote] PULL concluído: ${newDtos.length} waypoints sincronizados');
+    }
+    
+    // === FASE 2: PUSH (envia alterações locais ao servidor) ===
     try {
       if (kDebugMode) {
         print('[WaypointsRepositoryImplRemote] Iniciando PUSH de waypoints locais...');
       }
       
-      // Lê todos os waypoints do cache local
+      // Lê cache atualizado (já sincronizado com servidor)
       final localDtos = await _localDao.listAll();
       
       if (localDtos.isNotEmpty) {
@@ -70,32 +93,10 @@ class WaypointsRepositoryImplRemote implements WaypointsRepository {
         }
       }
     } catch (e) {
-      // Erro no push não bloqueia o pull
+      // Erro no push não bloqueia a sincronização
       if (kDebugMode) {
         print('[WaypointsRepositoryImplRemote] Erro no PUSH (ignorado): $e');
       }
-    }
-    
-    // === FASE 2: PULL (busca completa para detectar exclusões) ===
-    if (kDebugMode) {
-      print('[WaypointsRepositoryImplRemote] Iniciando PULL completo...');
-    }
-    
-    // Busca TODOS os waypoints do Supabase (sem filtro since)
-    final page = await _remote.fetchWaypoints(since: null);
-    final fetched = page.items;
-    
-    // Converte para DTOs
-    final newDtos = fetched.map((model) {
-      final entity = _modelToEntity(model);
-      return _mapper.toDto(entity);
-    }).toList();
-    
-    // Substitui cache local completamente
-    await _localDao.upsertAll(newDtos);
-    
-    if (kDebugMode) {
-      print('[WaypointsRepositoryImplRemote] PULL concluído: ${newDtos.length} waypoints sincronizados');
     }
     
     await _setLastSync(startedAt);

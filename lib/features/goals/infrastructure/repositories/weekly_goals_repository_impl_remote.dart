@@ -31,34 +31,7 @@ class WeeklyGoalsRepositoryImplRemote implements WeeklyGoalsRepository {
   Future<int> syncFromServer() async {
     final startedAt = DateTime.now().toUtc();
     
-    // === FASE 1: PUSH (melhor esforço) ===
-    try {
-      if (kDebugMode) {
-        print('[WeeklyGoalsRepositoryImplRemote] Iniciando PUSH de metas locais...');
-      }
-      
-      // Lê todas as metas do usuário do cache local
-      final localGoals = await _localDao.loadAllForUser(_defaultUserId);
-      
-      if (localGoals.isNotEmpty) {
-        // Converte para models
-        final models = localGoals.map((goal) => WeeklyGoalModel.fromEntity(goal)).toList();
-        
-        // Envia para o servidor (upsert)
-        final pushed = await _remote.upsertWeeklyGoals(models);
-        
-        if (kDebugMode) {
-          print('[WeeklyGoalsRepositoryImplRemote] PUSH concluído: $pushed metas enviadas');
-        }
-      }
-    } catch (e) {
-      // Erro no push não bloqueia o pull
-      if (kDebugMode) {
-        print('[WeeklyGoalsRepositoryImplRemote] Erro no PUSH (ignorado): $e');
-      }
-    }
-    
-    // === FASE 2: PULL (busca completa para detectar exclusões) ===
+    // === FASE 1: PULL (busca do servidor PRIMEIRO para detectar exclusões) ===
     if (kDebugMode) {
       print('[WeeklyGoalsRepositoryImplRemote] Iniciando PULL completo...');
     }
@@ -76,6 +49,33 @@ class WeeklyGoalsRepositoryImplRemote implements WeeklyGoalsRepository {
     
     if (kDebugMode) {
       print('[WeeklyGoalsRepositoryImplRemote] PULL concluído: ${fetched.length} metas sincronizadas');
+    }
+    
+    // === FASE 2: PUSH (envia alterações locais ao servidor) ===
+    try {
+      if (kDebugMode) {
+        print('[WeeklyGoalsRepositoryImplRemote] Iniciando PUSH de metas locais...');
+      }
+      
+      // Lê cache atualizado (já sincronizado com servidor)
+      final localGoals = await _localDao.loadAllForUser(_defaultUserId);
+      
+      if (localGoals.isNotEmpty) {
+        // Converte para models
+        final models = localGoals.map((goal) => WeeklyGoalModel.fromEntity(goal)).toList();
+        
+        // Envia para o servidor (upsert)
+        final pushed = await _remote.upsertWeeklyGoals(models);
+        
+        if (kDebugMode) {
+          print('[WeeklyGoalsRepositoryImplRemote] PUSH concluído: $pushed metas enviadas');
+        }
+      }
+    } catch (e) {
+      // Erro no push não bloqueia a sincronização
+      if (kDebugMode) {
+        print('[WeeklyGoalsRepositoryImplRemote] Erro no PUSH (ignorado): $e');
+      }
     }
     
     await _setLastSync(startedAt);

@@ -49,13 +49,36 @@ class SafetyAlertsRepositoryImplRemote implements SafetyAlertsRepository {
   Future<int> syncFromServer() async {
     final startedAt = DateTime.now().toUtc();
     
-    // === FASE 1: PUSH (melhor esforço) ===
+    // === FASE 1: PULL (busca do servidor PRIMEIRO para detectar exclusões) ===
+    if (kDebugMode) {
+      print('[SafetyAlertsRepositoryImplRemote] Iniciando PULL completo...');
+    }
+    
+    // Busca TODOS os alertas do Supabase (sem filtro since)
+    final page = await _remote.fetchSafetyAlerts(since: null);
+    final fetched = page.items;
+    
+    // Converte para DTOs
+    final newDtos = fetched.map((model) {
+      final entity = _modelToEntity(model);
+      return _mapper.toDto(entity, updatedAt: model.updatedAt);
+    }).toList();
+    
+    // Substitui cache local completamente
+    await _localDao.clear();
+    await _localDao.upsertAll(newDtos);
+    
+    if (kDebugMode) {
+      print('[SafetyAlertsRepositoryImplRemote] PULL concluído: ${newDtos.length} alertas sincronizados');
+    }
+    
+    // === FASE 2: PUSH (envia alterações locais ao servidor) ===
     try {
       if (kDebugMode) {
         print('[SafetyAlertsRepositoryImplRemote] Iniciando PUSH de alertas locais...');
       }
       
-      // Lê todos os alertas do cache local
+      // Lê cache atualizado (já sincronizado com servidor)
       final localDtos = await _localDao.listAll();
       
       if (localDtos.isNotEmpty) {
@@ -73,32 +96,10 @@ class SafetyAlertsRepositoryImplRemote implements SafetyAlertsRepository {
         }
       }
     } catch (e) {
-      // Erro no push não bloqueia o pull
+      // Erro no push não bloqueia a sincronização
       if (kDebugMode) {
         print('[SafetyAlertsRepositoryImplRemote] Erro no PUSH (ignorado): $e');
       }
-    }
-    
-    // === FASE 2: PULL (busca completa para detectar exclusões) ===
-    if (kDebugMode) {
-      print('[SafetyAlertsRepositoryImplRemote] Iniciando PULL completo...');
-    }
-    
-    // Busca TODOS os alertas do Supabase (sem filtro since)
-    final page = await _remote.fetchSafetyAlerts(since: null);
-    final fetched = page.items;
-    
-    // Converte para DTOs
-    final newDtos = fetched.map((model) {
-      final entity = _modelToEntity(model);
-      return _mapper.toDto(entity, updatedAt: model.updatedAt);
-    }).toList();
-    
-    // Substitui cache local completamente
-    await _localDao.upsertAll(newDtos);
-    
-    if (kDebugMode) {
-      print('[SafetyAlertsRepositoryImplRemote] PULL concluído: ${newDtos.length} alertas sincronizados');
     }
     
     await _setLastSync(startedAt);
