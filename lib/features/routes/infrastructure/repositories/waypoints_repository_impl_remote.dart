@@ -139,6 +139,8 @@ class WaypointsRepositoryImplRemote implements WaypointsRepository {
   @override
   Future<void> add(Waypoint waypoint) async {
     final dto = _mapper.toDto(waypoint);
+    
+    // 1. Adicionar ao cache local
     final existing = await _localDao.listAll();
     final updated = [...existing, dto];
     await _localDao.upsertAll(updated);
@@ -146,17 +148,47 @@ class WaypointsRepositoryImplRemote implements WaypointsRepository {
     if (kDebugMode) {
       print('[WaypointsRepositoryImplRemote] Waypoint adicionado localmente: ${waypoint.timestamp.toIso8601String()}');
     }
+    
+    // 2. Enviar imediatamente ao Supabase
+    try {
+      final model = _entityToModel(waypoint);
+      await _remote.upsertWaypoints([model]);
+      if (kDebugMode) {
+        print('[WaypointsRepositoryImplRemote] Waypoint enviado ao Supabase: ${waypoint.timestamp.toIso8601String()}');
+      }
+    } catch (e) {
+      if (kDebugMode) {
+        print('[WaypointsRepositoryImplRemote] Erro ao enviar waypoint ao Supabase: $e');
+      }
+      // Não falha a operação, será enviado no próximo sync
+    }
   }
   
   @override
   Future<void> update(Waypoint waypoint) async {
     final dto = _mapper.toDto(waypoint);
+    
+    // 1. Atualizar no cache local
     final existing = await _localDao.listAll();
     final updated = existing.where((d) => d.ts != waypoint.timestamp.toIso8601String()).toList()..add(dto);
     await _localDao.upsertAll(updated);
     
     if (kDebugMode) {
       print('[WaypointsRepositoryImplRemote] Waypoint atualizado localmente: ${waypoint.timestamp.toIso8601String()}');
+    }
+    
+    // 2. Enviar imediatamente ao Supabase
+    try {
+      final model = _entityToModel(waypoint);
+      await _remote.upsertWaypoints([model]);
+      if (kDebugMode) {
+        print('[WaypointsRepositoryImplRemote] Waypoint atualizado no Supabase: ${waypoint.timestamp.toIso8601String()}');
+      }
+    } catch (e) {
+      if (kDebugMode) {
+        print('[WaypointsRepositoryImplRemote] Erro ao atualizar waypoint no Supabase: $e');
+      }
+      // Não falha a operação, será enviado no próximo sync
     }
   }
   

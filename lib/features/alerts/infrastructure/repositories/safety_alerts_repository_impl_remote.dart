@@ -155,6 +155,8 @@ class SafetyAlertsRepositoryImplRemote implements SafetyAlertsRepository {
   @override
   Future<void> add(SafetyAlert alert) async {
     final dto = _mapper.toDto(alert, updatedAt: DateTime.now().toUtc());
+    
+    // 1. Adicionar ao cache local
     final existing = await _localDao.listAll();
     final updated = [...existing, dto];
     await _localDao.upsertAll(updated);
@@ -162,17 +164,47 @@ class SafetyAlertsRepositoryImplRemote implements SafetyAlertsRepository {
     if (kDebugMode) {
       print('[SafetyAlertsRepositoryImplRemote] Alerta adicionado localmente: ${alert.id}');
     }
+    
+    // 2. Enviar imediatamente ao Supabase
+    try {
+      final model = _entityToModel(alert);
+      await _remote.upsertSafetyAlerts([model]);
+      if (kDebugMode) {
+        print('[SafetyAlertsRepositoryImplRemote] Alerta enviado ao Supabase: ${alert.id}');
+      }
+    } catch (e) {
+      if (kDebugMode) {
+        print('[SafetyAlertsRepositoryImplRemote] Erro ao enviar alerta ao Supabase: $e');
+      }
+      // Não falha a operação, será enviado no próximo sync
+    }
   }
   
   @override
   Future<void> update(SafetyAlert alert) async {
     final dto = _mapper.toDto(alert, updatedAt: DateTime.now().toUtc());
+    
+    // 1. Atualizar no cache local
     final existing = await _localDao.listAll();
     final updated = existing.where((d) => d.id != alert.id).toList()..add(dto);
     await _localDao.upsertAll(updated);
     
     if (kDebugMode) {
       print('[SafetyAlertsRepositoryImplRemote] Alerta atualizado localmente: ${alert.id}');
+    }
+    
+    // 2. Enviar imediatamente ao Supabase
+    try {
+      final model = _entityToModel(alert);
+      await _remote.upsertSafetyAlerts([model]);
+      if (kDebugMode) {
+        print('[SafetyAlertsRepositoryImplRemote] Alerta atualizado no Supabase: ${alert.id}');
+      }
+    } catch (e) {
+      if (kDebugMode) {
+        print('[SafetyAlertsRepositoryImplRemote] Erro ao atualizar alerta no Supabase: $e');
+      }
+      // Não falha a operação, será enviado no próximo sync
     }
   }
   

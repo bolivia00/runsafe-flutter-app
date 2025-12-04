@@ -143,6 +143,8 @@ class RunningRoutesRepositoryImplRemote implements RunningRoutesRepository {
   @override
   Future<void> add(RunningRoute route) async {
     final dto = _mapper.toDto(route);
+    
+    // 1. Adicionar ao cache local
     final existing = await _localDao.listAll();
     final updated = [...existing, dto];
     await _localDao.upsertAll(updated);
@@ -150,17 +152,47 @@ class RunningRoutesRepositoryImplRemote implements RunningRoutesRepository {
     if (kDebugMode) {
       print('[RunningRoutesRepositoryImplRemote] Rota adicionada localmente: ${route.id}');
     }
+    
+    // 2. Enviar imediatamente ao Supabase
+    try {
+      final model = _entityToModel(route);
+      await _remote.upsertRunningRoutes([model]);
+      if (kDebugMode) {
+        print('[RunningRoutesRepositoryImplRemote] Rota enviada ao Supabase: ${route.id}');
+      }
+    } catch (e) {
+      if (kDebugMode) {
+        print('[RunningRoutesRepositoryImplRemote] Erro ao enviar rota ao Supabase: $e');
+      }
+      // Não falha a operação, será enviado no próximo sync
+    }
   }
   
   @override
   Future<void> update(RunningRoute route) async {
     final dto = _mapper.toDto(route);
+    
+    // 1. Atualizar no cache local
     final existing = await _localDao.listAll();
     final updated = existing.where((d) => d.route_id != route.id).toList()..add(dto);
     await _localDao.upsertAll(updated);
     
     if (kDebugMode) {
       print('[RunningRoutesRepositoryImplRemote] Rota atualizada localmente: ${route.id}');
+    }
+    
+    // 2. Enviar imediatamente ao Supabase
+    try {
+      final model = _entityToModel(route);
+      await _remote.upsertRunningRoutes([model]);
+      if (kDebugMode) {
+        print('[RunningRoutesRepositoryImplRemote] Rota atualizada no Supabase: ${route.id}');
+      }
+    } catch (e) {
+      if (kDebugMode) {
+        print('[RunningRoutesRepositoryImplRemote] Erro ao atualizar rota no Supabase: $e');
+      }
+      // Não falha a operação, será enviado no próximo sync
     }
   }
   
