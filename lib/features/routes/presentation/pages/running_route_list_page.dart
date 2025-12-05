@@ -33,8 +33,13 @@ class _RunningRouteListPageState extends State<RunningRouteListPage>
     );
 
     WidgetsBinding.instance.addPostFrameCallback((_) {
+      final provider = context.read<RunningRoutesProvider>();
+      
+      // Carrega rotas do provider remoto
+      provider.loadRoutes();
+      
       // Verifica se precisa exibir animação do FAB
-      if (mounted && context.read<RunningRoutesProvider>().routes.isEmpty && _showTip) {
+      if (mounted && provider.routes.isEmpty && _showTip) {
         _fabController.repeat(reverse: true);
       }
     });

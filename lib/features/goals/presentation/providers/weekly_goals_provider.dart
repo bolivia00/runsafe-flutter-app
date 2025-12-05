@@ -161,6 +161,10 @@ class WeeklyGoalsProvider extends ChangeNotifier {
 
   /// Atualiza um goal completo
   Future<void> updateGoal(WeeklyGoal goal) async {
+    if (kDebugMode) {
+      print('[WeeklyGoalsProvider] Atualizando meta: ${goal.id}, target: ${goal.targetKm}, current: ${goal.currentKm}');
+    }
+    
     try {
       // Usa método da interface
       await _repository.update(goal);
@@ -173,9 +177,16 @@ class WeeklyGoalsProvider extends ChangeNotifier {
       
       _error = null;
       notifyListeners();
+      
+      if (kDebugMode) {
+        print('[WeeklyGoalsProvider] Meta atualizada com sucesso');
+      }
     } catch (e) {
       _error = e.toString();
       notifyListeners();
+      if (kDebugMode) {
+        print('[WeeklyGoalsProvider] Erro ao atualizar meta: $e');
+      }
       rethrow;
     }
   }

@@ -262,9 +262,11 @@ class _WeeklyGoalListWidgetState extends State<WeeklyGoalListWidget> {
             child: Container(
               padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
               decoration: BoxDecoration(
-                color: Colors.grey[100],
+                color: Theme.of(context).colorScheme.surfaceContainerHighest,
                 borderRadius: BorderRadius.circular(8),
-                border: Border.all(color: Colors.grey[300]!),
+                border: Border.all(
+                  color: Theme.of(context).colorScheme.outline.withValues(alpha: 0.3),
+                ),
               ),
               child: Row(
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
@@ -273,10 +275,39 @@ class _WeeklyGoalListWidgetState extends State<WeeklyGoalListWidget> {
                     child: DropdownButton<String>(
                       value: _sortBy,
                       icon: const Icon(Icons.sort),
-                      items: const [
-                        DropdownMenuItem(value: 'target_km', child: Text('Distância')),
-                        DropdownMenuItem(value: 'progress', child: Text('Progresso')),
-                        DropdownMenuItem(value: 'current_km', child: Text('Km Atual')),
+                      dropdownColor: Theme.of(context).colorScheme.surface,
+                      style: TextStyle(
+                        color: Theme.of(context).colorScheme.onSurface,
+                        fontSize: 14,
+                      ),
+                      items: [
+                        DropdownMenuItem(
+                          value: 'target_km',
+                          child: Text(
+                            'Distância',
+                            style: TextStyle(
+                              color: Theme.of(context).colorScheme.onSurface,
+                            ),
+                          ),
+                        ),
+                        DropdownMenuItem(
+                          value: 'progress',
+                          child: Text(
+                            'Progresso',
+                            style: TextStyle(
+                              color: Theme.of(context).colorScheme.onSurface,
+                            ),
+                          ),
+                        ),
+                        DropdownMenuItem(
+                          value: 'current_km',
+                          child: Text(
+                            'Km Atual',
+                            style: TextStyle(
+                              color: Theme.of(context).colorScheme.onSurface,
+                            ),
+                          ),
+                        ),
                       ],
                       onChanged: (value) {
                         if (value != null) _changeSortBy(value);
@@ -286,7 +317,7 @@ class _WeeklyGoalListWidgetState extends State<WeeklyGoalListWidget> {
                   IconButton(
                     icon: Icon(
                       _sortDir == 'asc' ? Icons.arrow_upward : Icons.arrow_downward,
-                      color: AppColors.emerald,
+                      color: Theme.of(context).colorScheme.primary,
                     ),
                     onPressed: _toggleSortDir,
                     tooltip: _sortDir == 'asc' ? 'Crescente' : 'Decrescente',

@@ -105,14 +105,22 @@ class _WeeklyGoalFormDialogState extends State<_WeeklyGoalFormDialog> {
             children: [
               TextFormField(
                 controller: _targetKmController,
-                decoration: const InputDecoration(labelText: 'Meta (em km)'),
+                decoration: const InputDecoration(
+                  labelText: 'Meta (em km)',
+                  hintText: 'Ex: 10.0',
+                  prefixIcon: Icon(Icons.flag),
+                ),
                 keyboardType: TextInputType.number,
                 textInputAction: TextInputAction.next,
               ),
               const SizedBox(height: 8),
               TextFormField(
                 controller: _currentKmController,
-                decoration: const InputDecoration(labelText: 'Progresso Atual (em km)'),
+                decoration: const InputDecoration(
+                  labelText: 'Progresso Atual (em km)',
+                  hintText: 'Ex: 5.5',
+                  prefixIcon: Icon(Icons.directions_run),
+                ),
                 keyboardType: TextInputType.number,
                 textInputAction: TextInputAction.done,
               ),

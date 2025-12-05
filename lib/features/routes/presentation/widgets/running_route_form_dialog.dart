@@ -1,8 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:runsafe/features/routes/domain/entities/running_route.dart';
-import 'package:runsafe/features/routes/domain/entities/waypoint.dart';
-import 'package:runsafe/features/routes/data/repositories/waypoint_repository.dart';
+import 'package:runsafe/features/routes/presentation/providers/waypoints_provider.dart';
 import 'package:uuid/uuid.dart';
 
 /// Função pública para chamar o formulário
@@ -26,11 +25,29 @@ class _RunningRouteFormDialog extends StatefulWidget {
 
 class _RunningRouteFormDialogState extends State<_RunningRouteFormDialog> {
   late final TextEditingController _nameController;
+  final Set<String> _selectedWaypointIds = {};
+  bool _isLoadingWaypoints = true;
 
   @override
   void initState() {
     super.initState();
     _nameController = TextEditingController(text: widget.initial?.name ?? '');
+    
+    // Se estamos editando, marca os waypoints já existentes na rota
+    if (widget.initial != null) {
+      for (var wp in widget.initial!.waypoints) {
+        _selectedWaypointIds.add(wp.timestamp.toIso8601String());
+      }
+    }
+    
+    // Carrega waypoints do provider remoto
+    WidgetsBinding.instance.addPostFrameCallback((_) async {
+      final provider = context.read<WaypointsProvider>();
+      await provider.loadWaypoints();
+      if (mounted) {
+        setState(() => _isLoadingWaypoints = false);
+      }
+    });
   }
 
   @override
@@ -53,23 +70,17 @@ class _RunningRouteFormDialogState extends State<_RunningRouteFormDialog> {
       return;
     }
     
-    // 1. Pega o repositório de Waypoints (precisamos do 'listen: false' aqui)
-    final waypointRepository = context.read<WaypointRepository>();
+    // 1. Pega o provider de Waypoints
+    final waypointsProvider = context.read<WaypointsProvider>();
     
-    // 2. Pega a lista de waypoints que o usuário já cadastrou
-    List<Waypoint> waypointsToUse;
-    
-    // Se estamos editando, mantemos os waypoints originais
-    if (widget.initial != null) {
-      waypointsToUse = widget.initial!.waypoints;
-    } else {
-      // Se estamos criando, "atribuímos" todos os waypoints existentes a esta nova rota
-      waypointsToUse = waypointRepository.waypoints;
-    }
+    // 2. Filtra apenas os waypoints selecionados
+    final selectedWaypoints = waypointsProvider.waypoints
+        .where((wp) => _selectedWaypointIds.contains(wp.timestamp.toIso8601String()))
+        .toList();
 
     // 3. Verifica a invariante de domínio (precisa de pelo menos 1 waypoint)
-    if (waypointsToUse.isEmpty) {
-      _showError('Não é possível criar uma rota. Adicione Waypoints primeiro.');
+    if (selectedWaypoints.isEmpty) {
+      _showError('Selecione pelo menos 1 waypoint para criar a rota.');
       return;
     }
 
@@ -79,7 +90,7 @@ class _RunningRouteFormDialogState extends State<_RunningRouteFormDialog> {
       final newRoute = RunningRoute(
         id: id,
         name: name,
-        waypoints: waypointsToUse,
+        waypoints: selectedWaypoints,
       );
 
       Navigator.of(context).pop(newRoute);
@@ -92,29 +103,87 @@ class _RunningRouteFormDialogState extends State<_RunningRouteFormDialog> {
   @override
   Widget build(BuildContext context) {
     final isEditing = widget.initial != null;
-    final waypointsCount = context.watch<WaypointRepository>().waypoints.length;
+    final waypointsProvider = context.watch<WaypointsProvider>();
+    final availableWaypoints = waypointsProvider.waypoints;
 
     return AlertDialog(
       title: Text(isEditing ? 'Editar Rota' : 'Adicionar Nova Rota'),
-      content: SingleChildScrollView(
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            TextFormField(
-              controller: _nameController,
-              decoration: const InputDecoration(labelText: 'Nome da Rota'),
-              textInputAction: TextInputAction.done,
-            ),
-            if (!isEditing)
-              Padding(
-                padding: const EdgeInsets.only(top: 16.0),
-                child: Text(
-                  'Esta rota será criada usando os $waypointsCount Waypoints já cadastrados.',
-                  style: const TextStyle(color: Colors.grey, fontSize: 12),
-                ),
+      content: SizedBox(
+        width: double.maxFinite,
+        child: SingleChildScrollView(
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              TextFormField(
+                controller: _nameController,
+                decoration: const InputDecoration(labelText: 'Nome da Rota'),
+                textInputAction: TextInputAction.done,
               ),
-          ],
+              const SizedBox(height: 16),
+              const Text(
+                'Waypoints da rota:',
+                style: TextStyle(fontWeight: FontWeight.bold),
+              ),
+              const SizedBox(height: 8),
+              
+              if (_isLoadingWaypoints)
+                const Center(
+                  child: Padding(
+                    padding: EdgeInsets.all(16.0),
+                    child: CircularProgressIndicator(),
+                  ),
+                )
+              else if (availableWaypoints.isEmpty)
+                const Padding(
+                  padding: EdgeInsets.all(16.0),
+                  child: Text(
+                    'Nenhum waypoint disponível. Cadastre waypoints primeiro.',
+                    style: TextStyle(color: Colors.orange),
+                  ),
+                )
+              else
+                ...availableWaypoints.map((waypoint) {
+                  final id = waypoint.timestamp.toIso8601String();
+                  final isSelected = _selectedWaypointIds.contains(id);
+                  
+                  return CheckboxListTile(
+                    dense: true,
+                    title: Text(
+                      '${waypoint.latitude.toStringAsFixed(4)}, ${waypoint.longitude.toStringAsFixed(4)}',
+                      style: const TextStyle(fontSize: 14),
+                    ),
+                    subtitle: Text(
+                      waypoint.timestamp.toString().split('.')[0],
+                      style: const TextStyle(fontSize: 12),
+                    ),
+                    value: isSelected,
+                    onChanged: (bool? value) {
+                      setState(() {
+                        if (value == true) {
+                          _selectedWaypointIds.add(id);
+                        } else {
+                          _selectedWaypointIds.remove(id);
+                        }
+                      });
+                    },
+                  );
+                }).toList(),
+              
+              if (_selectedWaypointIds.isNotEmpty)
+                Padding(
+                  padding: const EdgeInsets.only(top: 8.0),
+                  child: Text(
+                    '${_selectedWaypointIds.length} waypoint(s) selecionado(s)',
+                    style: TextStyle(
+                      color: Theme.of(context).colorScheme.primary,
+                      fontSize: 12,
+                      fontWeight: FontWeight.bold,
+                    ),
+                  ),
+                ),
+            ],
+          ),
         ),
       ),
       actions: [

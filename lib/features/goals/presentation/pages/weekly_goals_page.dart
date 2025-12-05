@@ -126,6 +126,7 @@ class _WeeklyGoalsPageState extends State<WeeklyGoalsPage> {
                 return _GoalCard(
                   goal: goal,
                   onAddRun: (km) => provider.addRunForGoal(goal.id, km),
+                  onEdit: () => _showEditGoalDialog(context, provider, goal),
                   onDelete: () => _confirmDelete(context, provider, goal),
                 );
               },
@@ -182,6 +183,95 @@ class _WeeklyGoalsPageState extends State<WeeklyGoalsPage> {
     );
   }
 
+  void _showEditGoalDialog(
+    BuildContext context,
+    WeeklyGoalsProvider provider,
+    WeeklyGoal goal,
+  ) {
+    debugPrint('[WeeklyGoals] 🎯 Iniciando abertura de diálogo para meta: ${goal.id}');
+    debugPrint('[WeeklyGoals] 📊 Valores atuais - Target: ${goal.targetKm}, Current: ${goal.currentKm}');
+    
+    final targetController = TextEditingController(text: goal.targetKm.toString());
+    final currentController = TextEditingController(text: goal.currentKm.toString());
+
+    try {
+      showDialog<void>(
+        context: context,
+        barrierDismissible: false,
+        builder: (dialogContext) {
+          debugPrint('[WeeklyGoals] ✅ Builder do diálogo executado');
+          return AlertDialog(
+            title: const Text('Editar Meta'),
+            content: SingleChildScrollView(
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  TextField(
+                    controller: targetController,
+                    keyboardType: const TextInputType.numberWithOptions(decimal: true),
+                    decoration: const InputDecoration(
+                      labelText: 'Meta (km)',
+                      hintText: 'Ex: 10.5',
+                      border: OutlineInputBorder(),
+                    ),
+                  ),
+                  const SizedBox(height: 16),
+                  TextField(
+                    controller: currentController,
+                    keyboardType: const TextInputType.numberWithOptions(decimal: true),
+                    decoration: const InputDecoration(
+                      labelText: 'Progresso Atual (km)',
+                      hintText: 'Ex: 5.2',
+                      border: OutlineInputBorder(),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+            actions: [
+              TextButton(
+                onPressed: () {
+                  debugPrint('[WeeklyGoals] ❌ Cancelar clicado');
+                  Navigator.pop(dialogContext);
+                },
+                child: const Text('Cancelar'),
+              ),
+              ElevatedButton(
+                onPressed: () {
+                  debugPrint('[WeeklyGoals] 💾 Salvar clicado');
+                  final target = double.tryParse(targetController.text);
+                  final current = double.tryParse(currentController.text);
+                  
+                  if (target != null && target > 0 && current != null && current >= 0) {
+                    final updatedGoal = WeeklyGoal(
+                      id: goal.id,
+                      userId: goal.userId,
+                      targetKm: target,
+                      currentKm: current,
+                    );
+                    provider.updateGoal(updatedGoal);
+                    Navigator.pop(dialogContext);
+                  } else {
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      const SnackBar(
+                        content: Text('Digite valores válidos (meta > 0, progresso >= 0)'),
+                      ),
+                    );
+                  }
+                },
+                child: const Text('Salvar'),
+              ),
+            ],
+          );
+        },
+      );
+      debugPrint('[WeeklyGoals] 🚀 showDialog executado com sucesso');
+    } catch (e, stackTrace) {
+      debugPrint('[WeeklyGoals] ❗ ERRO ao abrir diálogo: $e');
+      debugPrint('[WeeklyGoals] Stack trace: $stackTrace');
+    }
+  }
+
   void _confirmDelete(
     BuildContext context,
     WeeklyGoalsProvider provider,
@@ -216,11 +306,13 @@ class _WeeklyGoalsPageState extends State<WeeklyGoalsPage> {
 class _GoalCard extends StatelessWidget {
   final WeeklyGoal goal;
   final Function(double) onAddRun;
+  final VoidCallback onEdit;
   final VoidCallback onDelete;
 
   const _GoalCard({
     required this.goal,
     required this.onAddRun,
+    required this.onEdit,
     required this.onDelete,
   });
 
@@ -229,116 +321,97 @@ class _GoalCard extends StatelessWidget {
     final progress = goal.progressPercentage;
     final isCompleted = progress >= 1.0;
 
-    return Card(
-      margin: const EdgeInsets.only(bottom: 12),
-      child: Padding(
-        padding: const EdgeInsets.all(16),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Row(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-              children: [
-                Text(
-                  'Meta: ${goal.targetKm.toStringAsFixed(1)} km',
-                  style: const TextStyle(
-                    fontSize: 18,
-                    fontWeight: FontWeight.bold,
-                  ),
-                ),
-                if (isCompleted)
-                  const Icon(Icons.check_circle, color: Colors.green, size: 28),
-              ],
+    return Dismissible(
+      key: Key(goal.id),
+      direction: DismissDirection.endToStart,
+      confirmDismiss: (direction) async {
+        return await showDialog<bool>(
+          context: context,
+          builder: (dialogContext) => AlertDialog(
+            title: const Text('Confirmar remoção'),
+            content: Text(
+              'Deseja remover a meta de ${goal.targetKm.toStringAsFixed(1)} km?',
             ),
-            const SizedBox(height: 8),
-            Text(
-              'Atual: ${goal.currentKm.toStringAsFixed(1)} km',
-              style: TextStyle(
-                fontSize: 16,
-                color: Colors.grey[700],
+            actions: [
+              TextButton(
+                onPressed: () => Navigator.pop(dialogContext, false),
+                child: const Text('Cancelar'),
               ),
-            ),
-            const SizedBox(height: 12),
-            ClipRRect(
-              borderRadius: BorderRadius.circular(8),
-              child: LinearProgressIndicator(
-                value: progress,
-                minHeight: 12,
-                backgroundColor: Colors.grey[300],
-                valueColor: AlwaysStoppedAnimation<Color>(
-                  isCompleted ? Colors.green : Colors.blue,
-                ),
+              ElevatedButton(
+                onPressed: () => Navigator.pop(dialogContext, true),
+                style: ElevatedButton.styleFrom(backgroundColor: Colors.red),
+                child: const Text('Remover'),
               ),
-            ),
-            const SizedBox(height: 8),
-            Text(
-              '${(progress * 100).toStringAsFixed(0)}% completo',
-              style: TextStyle(
-                fontSize: 14,
-                color: Colors.grey[600],
-              ),
-            ),
-            const SizedBox(height: 12),
-            Row(
-              mainAxisAlignment: MainAxisAlignment.end,
-              children: [
-                TextButton.icon(
-                  onPressed: onDelete,
-                  icon: const Icon(Icons.delete, color: Colors.red),
-                  label: const Text('Remover', style: TextStyle(color: Colors.red)),
-                ),
-                const SizedBox(width: 8),
-                ElevatedButton.icon(
-                  onPressed: () => _showAddRunDialog(context),
-                  icon: const Icon(Icons.add),
-                  label: const Text('Adicionar corrida'),
-                ),
-              ],
-            ),
-          ],
-        ),
+            ],
+          ),
+        );
+      },
+      onDismissed: (direction) {
+        onDelete();
+      },
+      background: Container(
+        color: Colors.red,
+        alignment: Alignment.centerRight,
+        padding: const EdgeInsets.symmetric(horizontal: 20.0),
+        child: const Icon(Icons.delete, color: Colors.white),
       ),
-    );
-  }
-
-  void _showAddRunDialog(BuildContext context) {
-    final kmController = TextEditingController();
-
-    showDialog(
-      context: context,
-      builder: (dialogContext) => AlertDialog(
-        title: const Text('Adicionar Corrida'),
-        content: TextField(
-          controller: kmController,
-          keyboardType: const TextInputType.numberWithOptions(decimal: true),
-          decoration: const InputDecoration(
-            labelText: 'Quilômetros',
-            hintText: 'Ex: 5.2',
-            border: OutlineInputBorder(),
+      child: Card(
+        margin: const EdgeInsets.only(bottom: 12),
+        child: ListTile(
+          contentPadding: const EdgeInsets.all(16),
+          title: Text(
+            'Meta: ${goal.targetKm.toStringAsFixed(1)} km',
+            style: const TextStyle(
+              fontSize: 18,
+              fontWeight: FontWeight.bold,
+            ),
           ),
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(dialogContext),
-            child: const Text('Cancelar'),
-          ),
-          ElevatedButton(
-            onPressed: () {
-              final km = double.tryParse(kmController.text);
-              if (km != null && km > 0) {
-                onAddRun(km);
-                Navigator.pop(dialogContext);
-              } else {
-                ScaffoldMessenger.of(context).showSnackBar(
-                  const SnackBar(
-                    content: Text('Digite um valor válido (maior que 0)'),
+          subtitle: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              const SizedBox(height: 8),
+              Text(
+                'Atual: ${goal.currentKm.toStringAsFixed(1)} km',
+                style: TextStyle(
+                  fontSize: 16,
+                  color: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.7),
+                ),
+              ),
+              const SizedBox(height: 12),
+              ClipRRect(
+                borderRadius: BorderRadius.circular(8),
+                child: LinearProgressIndicator(
+                  value: progress,
+                  minHeight: 12,
+                  backgroundColor: Theme.of(context).colorScheme.surfaceContainerHighest,
+                  valueColor: AlwaysStoppedAnimation<Color>(
+                    isCompleted ? Colors.green : Theme.of(context).colorScheme.primary,
                   ),
-                );
-              }
-            },
-            child: const Text('Adicionar'),
+                ),
+              ),
+              const SizedBox(height: 8),
+              Text(
+                '${(progress * 100).toStringAsFixed(0)}% completo',
+                style: TextStyle(
+                  fontSize: 14,
+                  color: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.6),
+                ),
+              ),
+            ],
           ),
-        ],
+          trailing: Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              if (isCompleted)
+                const Icon(Icons.check_circle, color: Colors.green, size: 28)
+              else
+                const Icon(Icons.arrow_forward_ios, size: 16),
+            ],
+          ),
+          onTap: () {
+            onEdit();
+          },
+        ),
       ),
     );
   }
