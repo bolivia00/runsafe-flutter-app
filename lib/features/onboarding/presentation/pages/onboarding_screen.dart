@@ -53,7 +53,8 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
   }
 
   void _navigateToHome() {
-    Navigator.of(context).pushReplacementNamed('/home');
+    // Após o onboarding, leva para tela de termos
+    Navigator.of(context).pushReplacementNamed('/privacy');
   }
 
   @override

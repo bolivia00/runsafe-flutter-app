@@ -33,6 +33,7 @@ dev_dependencies:
   flutter_test:
     sdk: flutter
   flutter_lints: ^2.0.0
+  flutter_launcher_icons: ^0.13.1
 
 # A seção FLUTTER deve começar AQUI, sem NENHUM espaço antes.
 flutter:
@@ -43,4 +44,27 @@ flutter:
   assets:
     # A linha abaixo deve ter QUATRO espaços antes.
     - assets/icons/
+    - assets/terms_and_privacy.md
     - .env
+
+# Configuração do flutter_launcher_icons
+flutter_launcher_icons:
+  android: true
+  ios: true
+  web:
+    generate: true
+  windows:
+    generate: true
+  macos:
+    generate: true
+  linux:
+    generate: true
+  
+  image_path: "assets/icons/app_icon.png"
+  
+  # Android adaptive icon
+  adaptive_icon_foreground: "assets/icons/app_icon.png"
+  adaptive_icon_background: "#10B981"  # Emerald color from app theme
+  
+  # iOS configuration
+  remove_alpha_ios: true

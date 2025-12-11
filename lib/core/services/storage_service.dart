@@ -2,6 +2,7 @@ import 'package:shared_preferences/shared_preferences.dart';
 
 class StorageService {
   static const String _consentKey = 'user_has_consented';
+  static const String _termsVersionKey = 'terms_version_accepted';
   static const String _photoPathKey = 'user_photo_path';
   static const String _photoUpdatedAtKey = 'user_photo_updated_at';
   static const String _weeklyGoalsKey = 'weekly_goals_list';
@@ -10,19 +11,33 @@ class StorageService {
   static const String _runningRoutesKey = 'running_routes_list';
 
   // --- CONSENTIMENTO ---
-  Future<void> saveUserConsent() async {
+  Future<void> saveUserConsent({String? version}) async {
     final prefs = await SharedPreferences.getInstance();
     await prefs.setBool(_consentKey, true);
+    if (version != null) {
+      await prefs.setString(_termsVersionKey, version);
+    }
   }
 
   Future<bool> hasUserConsented() async {
     final prefs = await SharedPreferences.getInstance();
     return prefs.getBool(_consentKey) ?? false;
   }
+  
+  Future<String?> getAcceptedTermsVersion() async {
+    final prefs = await SharedPreferences.getInstance();
+    return prefs.getString(_termsVersionKey);
+  }
+  
+  Future<bool> needsToAcceptNewTerms(String currentVersion) async {
+    final acceptedVersion = await getAcceptedTermsVersion();
+    return acceptedVersion == null || acceptedVersion != currentVersion;
+  }
 
   Future<void> revokeUserConsent() async {
     final prefs = await SharedPreferences.getInstance();
     await prefs.remove(_consentKey);
+    await prefs.remove(_termsVersionKey);
   }
 
   // --- FOTO DE PERFIL ---
