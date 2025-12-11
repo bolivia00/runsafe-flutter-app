@@ -16,6 +16,7 @@ class WeeklyGoalsProvider extends ChangeNotifier {
   // Getters
   List<WeeklyGoal> get items => List.unmodifiable(_items);
   bool get loading => _loading;
+  bool get isLoading => _loading; // Alias para manter compatibilidade com outras páginas
   String? get error => _error;
   bool get hasError => _error != null;
   bool get isEmpty => _items.isEmpty;
@@ -70,13 +71,8 @@ class WeeklyGoalsProvider extends ChangeNotifier {
       // Usa método da interface
       await _repository.add(goal);
       
-      // Atualiza lista local
-      final index = _items.indexWhere((g) => g.id == goal.id);
-      if (index != -1) {
-        _items[index] = goal;
-      } else {
-        _items.add(goal);
-      }
+      // Recarrega lista do repositório para manter sincronizado
+      _items = await _repository.listAll();
       
       _error = null;
       notifyListeners();
@@ -126,8 +122,8 @@ class WeeklyGoalsProvider extends ChangeNotifier {
       // Usa método da interface
       await _repository.delete(id);
       
-      // Remove da lista local
-      _items.removeWhere((g) => g.id == id);
+      // Recarrega lista do repositório para manter sincronizado
+      _items = await _repository.listAll();
       
       _error = null;
       notifyListeners();
@@ -169,11 +165,8 @@ class WeeklyGoalsProvider extends ChangeNotifier {
       // Usa método da interface
       await _repository.update(goal);
       
-      // Atualiza lista local
-      final index = _items.indexWhere((g) => g.id == goal.id);
-      if (index != -1) {
-        _items[index] = goal;
-      }
+      // Recarrega lista do repositório para manter sincronizado
+      _items = await _repository.listAll();
       
       _error = null;
       notifyListeners();

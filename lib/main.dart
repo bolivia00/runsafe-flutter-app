@@ -10,7 +10,8 @@ import 'package:runsafe/core/services/waypoints_local_dao.dart';
 import 'package:runsafe/core/theme/theme_controller.dart';
 import 'package:runsafe/core/theme/color_schemes.dart';
 import 'package:runsafe/features/goals/data/datasources/weekly_goals_local_dao.dart';
-import 'package:runsafe/features/goals/data/repositories/weekly_goals_repository_impl.dart';
+import 'package:runsafe/features/goals/infrastructure/repositories/weekly_goals_repository_impl_remote.dart';
+import 'package:runsafe/features/goals/infrastructure/remote/weekly_goals_remote_datasource_supabase.dart';
 import 'package:runsafe/features/goals/presentation/providers/weekly_goals_provider.dart';
 import 'package:runsafe/features/alerts/infrastructure/remote/safety_alerts_remote_datasource_supabase.dart';
 import 'package:runsafe/features/alerts/infrastructure/repositories/safety_alerts_repository_impl_remote.dart';
@@ -63,8 +64,9 @@ Future<void> main() async {
         ),
         ChangeNotifierProvider(
           create: (context) => WeeklyGoalsProvider(
-            WeeklyGoalsRepositoryImpl(
+            WeeklyGoalsRepositoryImplRemote(
               WeeklyGoalsLocalDao(StorageService()),
+              SupabaseWeeklyGoalsRemoteDatasource(Supabase.instance.client),
             ),
           )..load('default-user'),
         ),
